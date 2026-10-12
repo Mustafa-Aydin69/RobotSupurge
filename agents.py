@@ -6,31 +6,51 @@ tam olarak bir eylem döndürür.
 Bu modül grafik arayüzden tamamen bağımsızdır.
 """
 
-from environment import Action, Status
+import random
+
+from environment import Action, Grid, Status
 
 
 class ReflexAgent:
     """Basit refleks ajan (simple-reflex agent).
 
     Kararını yalnızca o anki algıya, yani bulunduğu oda ve o odanın temiz/kirli
-    durumuna göre verir. Hiçbir iç durum tutmaz: geçmiş algılar, önceki
-    eylemler ve log kayıtları karar vermede kullanılmaz.
+    durumuna göre verir. Geçmiş algılar, önceki eylemler, ziyaret edilen odalar
+    ve log kayıtları karar vermede kullanılmaz.
 
-    Karar tablosu (ödev tanımındaki tablonun birebir karşılığı):
+    1×2 ortamda karar tablosu (ödev tanımındaki tablonun birebir karşılığı):
 
         A odası, kirli  -> Temizle
         A odası, temiz  -> Sağa git
         B odası, kirli  -> Temizle
         B odası, temiz  -> Sola git
+
+    Diğer grid'lerde: oda kirliyse Temizle; temizse bulunulan odadan sınırlar
+    içinde kalan hareketlerden rastgele biri.
+
+    Ajan iki şey tutar ve ikisi de algı belleği değildir:
+
+    * ``grid``: ortamın değişmez yerleşimi (yapılandırma bilgisi),
+    * ``rng``: rastgele sayı üreteci. Seçimi rastgele yapmanın aracıdır; hangi
+      algıların görüldüğünü saklamaz ve olası seçimleri değiştirmez.
     """
 
     name = "Basit Refleks Ajan"
 
-    # Hareket kuralı: temiz odada hangi yöne gidileceği yalnızca odaya bağlıdır.
+    # 1×2 ortamın hareket kuralı: temiz odada gidilecek yön yalnızca odaya bağlıdır.
     MOVE_RULES = {"A": Action.RIGHT, "B": Action.LEFT}
 
-    # İç durum tutulmadığını garanti etmek için örnek özniteliği yasaklanır.
-    __slots__ = ()
+    # Yalnızca bu iki yapılandırma alanına izin verilir; geçmiş tutacak yeni bir
+    # öznitelik eklenemez.
+    __slots__ = ("_grid", "_rng")
+
+    def __init__(self, grid=None, rng=None):
+        self._grid = grid if grid is not None else Grid()
+        self._rng = rng if rng is not None else random.Random()
+
+    @property
+    def grid(self):
+        return self._grid
 
     def act(self, percept):
         location, status = percept
@@ -44,5 +64,11 @@ class ReflexAgent:
         return Action.CLEAN
 
     def move_rule(self, location):
-        """Hareket kuralı: bulunulan oda temizse diğer odaya geç."""
-        return self.MOVE_RULES[location]
+        """Hareket kuralı: bulunulan oda temizse başka bir odaya geç.
+
+        1×2'de ödev tablosu uygulanır. Diğer grid'lerde yalnızca bulunulan
+        odaya göre geçerli olan hareketlerden biri rastgele seçilir.
+        """
+        if self._grid.is_two_room:
+            return self.MOVE_RULES[location]
+        return self._rng.choice(self._grid.valid_moves(location))
