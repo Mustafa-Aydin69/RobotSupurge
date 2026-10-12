@@ -1,0 +1,28 @@
+# Ödev tanımı yerelde kalır, repoya gönderilmez
+Robot_Supurge_Proje_Tanimi.pdf
+
+# Python önbellekleri
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Sanal ortamlar
+.venv/
+venv/
+env/
+
+# PyInstaller derleme çıktıları
+build/
+dist/
+*.exe
+
+# Editör ve işletim sistemi dosyaları
+.vscode/
+.idea/
+.claude/
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Gizli bilgiler
+.env
