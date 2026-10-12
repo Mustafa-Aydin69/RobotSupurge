@@ -14,7 +14,10 @@ import time
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from environment import ROOMS, Action, Status
+from environment import Action, Grid, Status
+
+# Faz 2 arayüz adımına kadar arayüz 1×2 ortamı çizer.
+ROOMS = Grid().rooms
 from simulation import DirtRecord, Simulation, SimulationState
 
 # ----------------------------------------------------------------------

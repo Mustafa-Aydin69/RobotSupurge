@@ -1,11 +1,13 @@
 """Robot süpürgenin içinde çalıştığı ortam.
 
-Ortam, yan yana duran iki odadan (A ve B) oluşur. Her oda temiz veya kirli
-olabilir. Ortam üç ayrı kural grubunu birbirinden bağımsız olarak yönetir:
+Ortam, iki boyutlu bir grid üzerine yerleşmiş odalardan oluşur. Varsayılan
+ortam, ödevin zorunlu kısmındaki yan yana iki odadır (A ve B). Her oda temiz
+veya kirli olabilir. Ortam üç ayrı kural grubunu birbirinden bağımsız olarak yönetir:
 
 * Algılama: ajan yalnızca bulunduğu odayı ve o odanın durumunu algılar.
 * Temizleme: ajan yalnızca bulunduğu odayı temizleyebilir.
-* Hareket: ajan yalnızca komşu odaya geçebilir, sınır dışına çıkamaz.
+* Hareket: ajan yalnızca komşu odaya (sağ, sol, yukarı, aşağı) geçebilir,
+  sınır dışına çıkamaz.
 
 Bu modül grafik arayüzden tamamen bağımsızdır.
 """
@@ -128,17 +130,11 @@ class Grid:
         )
 
 
-# Odalar soldan sağa sıralıdır: A solda, B sağda.
-ROOMS = ("A", "B")
-
-# Hareket eylemlerinin oda sırası üzerindeki etkisi.
-MOVE_OFFSETS = {Action.LEFT: -1, Action.RIGHT: +1}
-
 DEFAULT_DIRT_PROBABILITY = 0.3
 
 
 class Environment:
-    """İki odalı robot süpürge ortamı.
+    """Grid üzerinde çalışan robot süpürge ortamı (varsayılan 1×2).
 
     Başlangıç konumu ve oda durumları verilmezse ``rng`` ile rastgele seçilir.
     Aynı tohumla (seed) oluşturulan ``rng`` her seferinde aynı ortamı üretir.
@@ -150,28 +146,37 @@ class Environment:
         dirt_probability=DEFAULT_DIRT_PROBABILITY,
         location=None,
         statuses=None,
+        rows=1,
+        cols=2,
     ):
         if not 0.0 <= dirt_probability <= 1.0:
             raise ValueError("Kirlenme olasılığı 0 ile 1 arasında olmalıdır.")
 
+        self.grid = Grid(rows, cols)
         self._rng = rng if rng is not None else random.Random()
         self.dirt_probability = dirt_probability
 
+        rooms = self.grid.rooms
         if statuses is None:
-            statuses = {room: self._rng.choice(list(Status)) for room in ROOMS}
-        if set(statuses) != set(ROOMS):
-            raise ValueError(f"Oda durumları tam olarak {ROOMS} odalarını içermelidir.")
+            statuses = {room: self._rng.choice(list(Status)) for room in rooms}
+        if set(statuses) != set(rooms):
+            raise ValueError("Oda durumları ortamdaki odaların tamamını içermelidir.")
         self._statuses = dict(statuses)
 
         if location is None:
-            location = self._rng.choice(ROOMS)
-        if location not in ROOMS:
+            location = self._rng.choice(rooms)
+        if location not in rooms:
             raise ValueError(f"Geçersiz oda: {location!r}")
         self._location = location
 
     # ------------------------------------------------------------------
     # Durum sorguları
     # ------------------------------------------------------------------
+    @property
+    def rooms(self):
+        """Odaların adları, satır satır sıralı."""
+        return self.grid.rooms
+
     @property
     def location(self):
         """Ajanın şu an bulunduğu oda."""
@@ -191,7 +196,7 @@ class Environment:
     def percept(self):
         """Ajanın algısı: (bulunduğu oda, o odanın durumu).
 
-        Ajan diğer odanın durumunu göremez.
+        Ajan diğer odaların durumunu göremez.
         """
         return self._location, self._statuses[self._location]
 
@@ -207,10 +212,7 @@ class Environment:
     # ------------------------------------------------------------------
     def can_move(self, action):
         """Hareket eylemi ajanı ortamın içinde tutuyorsa True döner."""
-        if action not in MOVE_OFFSETS:
-            return False
-        target = ROOMS.index(self._location) + MOVE_OFFSETS[action]
-        return 0 <= target < len(ROOMS)
+        return action in self.grid.valid_moves(self._location)
 
     def move(self, action):
         """Ajanı komşu odaya taşır.
@@ -218,13 +220,9 @@ class Environment:
         Sınır dışına çıkaracak bir hareket kesinlikle uygulanmaz ve
         ``ValueError`` fırlatılır; ortamın durumu değişmeden kalır.
         """
-        if action not in MOVE_OFFSETS:
-            raise ValueError(f"{action} bir hareket eylemi değildir.")
-        if not self.can_move(action):
-            raise ValueError(
-                f"{self._location} odasından {action.value} hareketi ortam sınırının dışına çıkar."
-            )
-        self._location = ROOMS[ROOMS.index(self._location) + MOVE_OFFSETS[action]]
+        # Grid.neighbor geçersiz eylemde ya da sınır dışında ValueError fırlatır;
+        # konum ancak hedef oda geçerliyse güncellenir.
+        self._location = self.grid.neighbor(self._location, action)
 
     # ------------------------------------------------------------------
     # Eylem yürütme
@@ -245,7 +243,7 @@ class Environment:
         Ajanın konumunu değiştirmez. Yeni kirlenen odaların listesini döndürür.
         """
         newly_dirty = []
-        for room in ROOMS:
+        for room in self.grid.rooms:
             if self._statuses[room] is Status.CLEAN and self._rng.random() < self.dirt_probability:
                 self._statuses[room] = Status.DIRTY
                 newly_dirty.append(room)

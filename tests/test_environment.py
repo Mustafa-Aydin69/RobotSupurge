@@ -3,7 +3,9 @@
 import random
 import unittest
 
-from environment import ROOMS, Action, Environment, Status
+from environment import Action, Environment, Grid, Status
+
+ROOMS = ("A", "B")
 
 
 def make_env(location="A", a=Status.CLEAN, b=Status.CLEAN, seed=0, dirt_probability=0.3):
@@ -121,6 +123,84 @@ class RandomInitTests(unittest.TestCase):
             env = Environment(rng=random.Random(seed))
             seen.add((env.location, env.status_of("A"), env.status_of("B")))
         self.assertEqual(len(seen), 8, "2 konum x 4 oda durumu kombinasyonunun hepsi görülmeli")
+
+
+def make_grid_env(rows, cols, location, dirty=(), seed=0, dirt_probability=0.3):
+    env = Environment(rng=random.Random(seed), dirt_probability=dirt_probability, rows=rows, cols=cols)
+    statuses = {room: (Status.DIRTY if room in dirty else Status.CLEAN) for room in env.rooms}
+    return Environment(
+        rng=random.Random(seed), dirt_probability=dirt_probability,
+        location=location, statuses=statuses, rows=rows, cols=cols,
+    )
+
+
+class GridEnvironmentTests(unittest.TestCase):
+    def test_default_environment_is_1x2(self):
+        env = Environment(rng=random.Random(0))
+        self.assertEqual((env.grid.rows, env.grid.cols), (1, 2))
+        self.assertEqual(env.rooms, ("A", "B"))
+
+    def test_random_init_uses_all_grid_rooms(self):
+        env = Environment(rng=random.Random(3), rows=3, cols=4)
+        self.assertEqual(set(env.statuses()), set(env.rooms))
+        self.assertEqual(len(env.rooms), 12)
+        self.assertIn(env.location, env.rooms)
+
+    def test_moves_in_four_directions(self):
+        env = make_grid_env(3, 3, "B2")
+        for action, target in [(Action.UP, "A2"), (Action.DOWN, "B2"), (Action.DOWN, "C2"),
+                               (Action.LEFT, "C1"), (Action.RIGHT, "C2"), (Action.RIGHT, "C3")]:
+            env.execute(action)
+            self.assertEqual(env.location, target)
+
+    def test_percept_and_clean_affect_only_current_room(self):
+        env = make_grid_env(2, 3, "B3", dirty=("A1", "B3"))
+        self.assertEqual(env.percept(), ("B3", Status.DIRTY))
+        env.execute(Action.CLEAN)
+        self.assertEqual(env.status_of("B3"), Status.CLEAN)
+        self.assertEqual(env.status_of("A1"), Status.DIRTY)
+        self.assertEqual(env.location, "B3")
+
+    def test_out_of_bounds_move_raises_and_leaves_state_unchanged(self):
+        """Bütün geçerli grid boyutlarında, her sınır odasında her dışa doğru hareket."""
+        checked = 0
+        for rows in range(1, 7):
+            for cols in range(1, 7):
+                if rows * cols < 2:
+                    continue
+                rooms = Grid(rows, cols).rooms
+                for room in rooms:
+                    for action in (Action.LEFT, Action.RIGHT, Action.UP, Action.DOWN):
+                        env = make_grid_env(rows, cols, room, dirty=rooms[::2])
+                        before = (env.location, env.statuses())
+                        if env.can_move(action):
+                            continue
+                        with self.assertRaises(ValueError):
+                            env.execute(action)
+                        self.assertEqual((env.location, env.statuses()), before)
+                        checked += 1
+        # Her grid'in çevresindeki dışa dönük kenar sayısı: 2 * (rows + cols)
+        expected = sum(2 * (r + c) for r in range(1, 7) for c in range(1, 7) if r * c >= 2)
+        self.assertEqual(checked, expected)
+
+    def test_dirty_tick_covers_all_grid_rooms(self):
+        env = make_grid_env(4, 5, "A1", dirt_probability=1.0)
+        self.assertEqual(env.dirty_tick(), list(env.rooms))
+        self.assertTrue(all(s is Status.DIRTY for s in env.statuses().values()))
+
+    def test_invalid_grid_is_rejected(self):
+        for rows, cols in [(1, 1), (0, 3), (7, 1)]:
+            with self.subTest(rows=rows, cols=cols), self.assertRaises(ValueError):
+                Environment(rows=rows, cols=cols)
+
+    def test_statuses_must_match_grid_rooms(self):
+        with self.assertRaises(ValueError):
+            Environment(rows=2, cols=2, location="A1", statuses={"A": Status.CLEAN, "B": Status.CLEAN})
+
+    def test_same_seed_gives_same_grid_environment(self):
+        a = Environment(rng=random.Random(9), rows=5, cols=6)
+        b = Environment(rng=random.Random(9), rows=5, cols=6)
+        self.assertEqual((a.location, a.statuses()), (b.location, b.statuses()))
 
 
 if __name__ == "__main__":
