@@ -166,6 +166,7 @@ class VacuumApp:
         self._last_action = None
         self._last_plan_version = 0
         self._clock_job = None          # süre göstergesi zamanlayıcısı
+        self.compare_window = None      # karşılaştırma penceresi (açıksa)
         self._log_trimmed = 0           # ekrandan kaldırılan günlük satırı sayısı
 
         root.title("Robot Süpürge Ajanı")
@@ -264,6 +265,9 @@ class VacuumApp:
         self.start_button.pack(side="left")
         self.pause_button.pack(side="left", padx=6)
         self.stop_button.pack(side="left")
+        self.compare_button = ttk.Button(frame, text="Ajanları Karşılaştır", command=self.open_comparison,
+                                         takefocus=False)
+        self.compare_button.pack(side="left", padx=(16, 0))
 
         ttk.Label(frame, text="Kısayollar: Boşluk = Duraklat/Devam, Esc = Durdur", foreground="#555").pack(
             side="right"
@@ -444,6 +448,23 @@ class VacuumApp:
         dirty_text = ", ".join(dirty) if dirty else "yok"
         return (f"{header} Ajan {env.location} odasında; kirli odalar "
                 f"({len(dirty)}/{len(env.rooms)}): {dirty_text}")
+
+    def open_comparison(self):
+        """Karşılaştırma penceresini açar (zaten açıksa öne getirir).
+
+        Pencere ana simülasyonla nesne paylaşmaz; ana simülasyon çalışmaya devam eder.
+        """
+        from compare_window import CompareWindow
+
+        if self.compare_window is not None and not self.compare_window.closed:
+            self.compare_window.window.lift()
+            return self.compare_window
+        try:
+            rows, cols = parse_grid_size(self.rows_var.get(), self.cols_var.get())
+        except ValueError:
+            rows, cols = 4, 4
+        self.compare_window = CompareWindow(self.root, rows=rows, cols=cols)
+        return self.compare_window
 
     def selected_agent_type(self):
         """Seçim listesindeki ajan türünün anahtarı."""
