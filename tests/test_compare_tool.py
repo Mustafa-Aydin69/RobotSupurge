@@ -12,7 +12,7 @@ from tools.compare_agents import (
 
 class CoverageMeasurementTests(unittest.TestCase):
     def test_coverage_step_matches_manual_count(self):
-        for agent_type in ("reflex", "model"):
+        for agent_type in ("reflex", "model", "goal"):
             for seed in range(5):
                 sim = Simulation(seed=seed, rows=3, cols=3, agent_type=agent_type,
                                  dirt_probability=0.0, clock=lambda: 0.0)
@@ -31,7 +31,7 @@ class CoverageMeasurementTests(unittest.TestCase):
         for seed in range(10):
             env = Simulation(seed=seed).environment
             expected = 3 if env.status_of(env.location) is Status.DIRTY else 2
-            for agent_type in ("reflex", "model"):
+            for agent_type in ("reflex", "model", "goal"):
                 with self.subTest(seed=seed, agent=agent_type):
                     self.assertEqual(coverage_steps(agent_type, 1, 2, seed), expected)
 
@@ -42,6 +42,12 @@ class CoverageMeasurementTests(unittest.TestCase):
                 mean_clean_ratio("model", 3, 3, 2, steps=300, mode=mode),
                 mean_clean_ratio("model", 3, 3, 2, steps=300, mode=mode),
             )
+
+    def test_all_three_agents_are_compared(self):
+        from tools.compare_agents import AGENT_KEYS
+        self.assertEqual(AGENT_KEYS, ("reflex", "model", "goal"))
+        self.assertEqual(mean_clean_ratio("goal", 3, 3, 1, steps=200, mode="common"),
+                         mean_clean_ratio("goal", 3, 3, 1, steps=200, mode="common"))
 
     def test_same_seed_gives_both_agents_same_start(self):
         for seed in range(20):

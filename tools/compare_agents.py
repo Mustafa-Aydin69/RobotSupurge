@@ -1,4 +1,4 @@
-"""Refleks ve model tabanlı ajanların ölçümle karşılaştırılması.
+"""Refleks, model tabanlı ve amaç tabanlı ajanların ölçümle karşılaştırılması.
 
 Çalıştırma (proje kök dizininden):
     python -m tools.compare_agents
@@ -18,13 +18,14 @@ içindir. Ölçümler seed'lidir ve her çalıştırmada aynı sonucu üretir.
     alınır. Kirlenme her ``dirt_every`` adımda bir tetiklenir. İki üretim
     biçimi vardır:
 
+
     * ``independent``: Simülasyonun kendi ``dirty_tick`` mekanizması. Ortam,
       yalnızca temiz odalar için rastgele sayı çeker. Ajanlar farklı hareket
-      ettiği için temiz oda kümeleri ayrışır; aynı seed kullanılsa bile iki
-      ajanın karşılaştığı kirlenme olayları aynı olmaz.
+      ettiği için temiz oda kümeleri ayrışır; aynı seed kullanılsa bile
+      ajanların karşılaştığı kirlenme olayları aynı olmaz.
     * ``common`` (ortak rastgele sayılar): Her tetiklemede her oda için ajandan
       bağımsız bir sayı çekilir; oda temizse ve sayı olasılıktan küçükse
-      kirlenir. Böylece iki ajan aynı "kirlenme denemeleri" dizisiyle
+      kirlenir. Böylece bütün ajanlar aynı "kirlenme denemeleri" dizisiyle
       karşılaşır. Bir oda zaten kirliyse deneme etkisiz kalır; yani ortaya
       çıkan kirlenme olayları yine ajanın davranışına bağlıdır, ama rastgelelik
       kaynağı ortaktır.
@@ -38,7 +39,8 @@ import sys
 from environment import Status
 from simulation import Simulation
 
-AGENT_KEYS = ("reflex", "model")
+AGENT_KEYS = ("reflex", "model", "goal")
+AGENT_LABELS = {"reflex": "refleks", "model": "model", "goal": "amaç"}
 COVERAGE_GRIDS = [(1, 6), (3, 3), (4, 4), (3, 5), (6, 6)]
 CLEAN_RATIO_GRIDS = [(1, 2), (3, 3), (4, 4), (6, 6)]
 
@@ -102,24 +104,24 @@ def mean_clean_ratio(agent_type, rows, cols, seed, steps=3000, dirt_every=4,
 
 
 def same_initial_state(rows, cols, seed):
-    """Aynı seed'in iki ajana aynı başlangıç durumunu verip vermediği."""
+    """Aynı seed'in bütün ajanlara aynı başlangıç durumunu verip vermediği."""
     states = []
     for agent_type in AGENT_KEYS:
         env = Simulation(seed=seed, rows=rows, cols=cols, agent_type=agent_type).environment
         states.append((env.location, env.statuses()))
-    return states[0] == states[1]
+    return all(state == states[0] for state in states)
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Refleks ve model tabanlı ajan karşılaştırması")
+    parser = argparse.ArgumentParser(description="Ajan türlerinin ölçümle karşılaştırılması")
     parser.add_argument("--seeds", type=int, default=50, help="kapsama ölçümü için seed sayısı")
     parser.add_argument("--ratio-seeds", type=int, default=20, help="temiz oran ölçümü için seed sayısı")
     args = parser.parse_args(argv)
     sys.stdout.reconfigure(encoding="utf-8")  # Windows konsolunda Türkçe karakterler için
 
     seeds = range(args.seeds)
-    print(f"Kapsama adımı (kirlenme kapalı, seed 0..{args.seeds - 1})")
-    print(f"{'grid':6} {'refleks ort/med/maks':>24} | {'model ort/med/maks':>22}")
+    print(f"Kapsama adımı: ortalama / medyan / en kötü (kirlenme kapalı, seed 0..{args.seeds - 1})")
+    print(f"{'grid':6}" + "".join(f" | {AGENT_LABELS[key]:>20}" for key in AGENT_KEYS))
     for rows, cols in COVERAGE_GRIDS:
         assert all(same_initial_state(rows, cols, s) for s in seeds)
         cells = []
@@ -129,21 +131,21 @@ def main(argv=None):
                 cells.append("sınıra ulaşıldı")
                 continue
             cells.append(f"{statistics.mean(values):.1f} / {statistics.median(values):.1f} / {max(values)}")
-        print(f"{rows}x{cols:<4} {cells[0]:>24} | {cells[1]:>22}")
+        print(f"{rows}x{cols:<4}" + "".join(f" | {cell:>20}" for cell in cells))
 
     ratio_seeds = range(args.ratio_seeds)
     print()
     print(f"Ortalama temiz oda oranı (3000 adım, her 4 adımda %30 kirlenme, seed 0..{args.ratio_seeds - 1})")
-    print(f"{'grid':6} {'bağımsız: refleks':>18} {'model':>7} | {'ortak: refleks':>15} {'model':>7}")
+    header = "".join(f" {AGENT_LABELS[key]:>8}" for key in AGENT_KEYS)
+    print(f"{'grid':6} | bağımsız:{header} | ortak:{header}")
     for rows, cols in CLEAN_RATIO_GRIDS:
-        values = {}
+        cells = {}
         for mode in ("independent", "common"):
-            for agent_type in AGENT_KEYS:
-                values[mode, agent_type] = statistics.mean(
-                    mean_clean_ratio(agent_type, rows, cols, s, mode=mode) for s in ratio_seeds
-                )
-        print(f"{rows}x{cols:<4} {values['independent', 'reflex']:18.3f} {values['independent', 'model']:7.3f} | "
-              f"{values['common', 'reflex']:15.3f} {values['common', 'model']:7.3f}")
+            cells[mode] = "".join(
+                f" {statistics.mean(mean_clean_ratio(t, rows, cols, s, mode=mode) for s in ratio_seeds):8.3f}"
+                for t in AGENT_KEYS
+            )
+        print(f"{rows}x{cols:<4} | {'':9}{cells['independent']} | {'':6}{cells['common']}")
 
 
 if __name__ == "__main__":
