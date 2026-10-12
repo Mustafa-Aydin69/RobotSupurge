@@ -7,7 +7,7 @@
 #
 # Dosyalar:
 #   environment.py  grid ve ortam (algılama, temizleme, hareket, kirlenme)
-#   agents.py       basit refleks ajan (1×2 tablo, grid'de rastgele geçerli hareket)
+#   agents.py       basit refleks ajan ve model tabanlı ajan
 #   simulation.py   algı-karar-eylem döngüsü ve günlük (arayüzden bağımsız)
 #   gui.py          Tkinter arayüzü
 """Uygulamanın giriş noktası."""

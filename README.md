@@ -6,8 +6,8 @@ Algı, eylem ve ajan türleri arasındaki ilişkiyi inceleyen bir robot süpürg
 simülasyonu. Python ve Tkinter ile yazılmıştır, ek paket gerektirmez.
 
 > Bu doküman geliştirme sürecinde güncellenmektedir. Şu an zorunlu temel
-> uygulama (iki oda, basit refleks ajan) ve çok odalı grid ortamı
-> tamamlanmıştır.
+> uygulama (iki oda, basit refleks ajan), çok odalı grid ortamı ve model
+> tabanlı ajan tamamlanmıştır.
 
 ## Gereksinimler
 
@@ -40,6 +40,7 @@ ortamda bu testler otomatik olarak atlanır.
 | Kirlenme aralığı (sn) | Kirlenme zamanlayıcısının tetiklenme aralığı. Varsayılan 3 sn. |
 | Seed | İsteğe bağlı. Aynı seed aynı başlangıcı, kirlenme dizisini ve ajan seçimlerini üretir. |
 | Satır / Sütun | Ortamın boyutu (1–6, en az 2 oda). Varsayılan 1×2. Yalnızca Başlat'ta uygulanır; simülasyon çalışırken veya duraklatılmışken değiştirilemez. |
+| Ajan türü | Basit Refleks Ajan (varsayılan) veya Model Tabanlı Ajan. Yalnızca Başlat'ta uygulanır; çalışırken veya duraklatılmışken değiştirilemez. |
 
 Program kullanıcı durdurana kadar çalışır. Bütün odalar temiz olsa bile ajan
 odalar arasında dolaşmaya devam eder.
@@ -84,6 +85,45 @@ Ajan yalnızca değişmez grid yerleşimini ve bir rastgele sayı üretecini tut
 Rastgele sayı üreteci algı belleği değildir: hangi odaların görüldüğünü
 saklamaz, yalnızca geçerli hareketler arasından seçim yapar. Geçmiş konumlar,
 ziyaret sayıları ve önceki eylemler kararı etkilemez.
+
+### Model tabanlı ajan
+
+Ajan yalnızca kendi algılarından bir **iç model** kurar; ortamın tamamını
+göremez.
+
+- **Model:** Her oda için son bilinen durum (temiz/kirli), bu bilginin ait
+  olduğu ajan adımı ve bilginin kaynağı (`algı` ya da `çıkarım`). Hiç
+  algılanmamış odalar modelde yer almaz, yani bilinmiyordur.
+- **Güncelleme:** Her adımda önce güncel algı modele yazılır; güncel algı her
+  zaman eski bilginin önüne geçer.
+- **Eylem sonucu:** Simülasyon, ortam eylemi uyguladıktan sonra ajana eylemin
+  başarılı olup olmadığını bildirir (`action_result`). Ajan ancak başarılı bir
+  Temizle bildiriminden sonra odayı "temiz (çıkarım)" olarak kaydeder;
+  başarılı bir hareketten sonra da yalnızca kendi konumunu günceller. Bir
+  sonraki algı çıkarımı doğrular ya da düzeltir. Başarısız eylemden çıkarım
+  yapılmaz. Refleks ajan bu bildirimi yok sayar.
+- **Karar:** Oda kirliyse Temizle. Temizse bulunulan odadan geçerli hareketler
+  arasından, hedef komşusu hiç algılanmamış olan; bütün komşular biliniyorsa
+  son bilgisi en eski olan seçilir. Eşitlikte seed'li rastgele seçim yapılır.
+- **Yaş:** Son bilgiden bu yana geçen ajan adımıdır. Gerçek süre ya da kesin
+  bir kirlenme olasılığı değildir; yalnızca bilginin ne kadar eskidiğini
+  gösterir.
+
+1×2 ortamda her odadan yalnızca bir geçerli hareket olduğu için model tabanlı
+ajanın hareketleri refleks ajanla aynı olabilir. Fark en az üç odalı
+grid'lerde görülür.
+
+**İç model paneli:** Model tabanlı ajan seçiliyken "Ajanın iç modeli (gerçek
+durum değil)" paneli gösterilir. Panel yalnızca ajanın salt okunur model
+kopyasından çizilir; ajana bilgi vermez ve belleğini değiştiremez.
+
+| Görünüm | Anlamı |
+|---|---|
+| Gri, `?` | Bilinmiyor (hiç algılanmadı) |
+| Yeşil | Temiz (algı) |
+| Yeşil, kesikli kenar | Temiz (kendi Temizle eyleminden çıkarım) |
+| Sarı | Eskimiş: yaş ≥ max(4, oda sayısı). Yalnızca görselleştirme içindir. |
+| Kahverengi | Kirli |
 
 ## Günlük
 
