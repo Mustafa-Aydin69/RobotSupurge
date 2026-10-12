@@ -1,7 +1,12 @@
 """Robot süpürge ajanları.
 
-Her ajan aynı arayüzü uygular: ``act(percept) -> Action``. Ajan her çağrıda
-tam olarak bir eylem döndürür.
+Her ajan aynı arayüzü uygular:
+
+* ``act(percept) -> Action``: güncel algıya göre tam olarak bir eylem seçer.
+* ``action_result(action, succeeded)``: ortam eylemi uyguladıktan sonra
+  simülasyon tarafından çağrılır ve eylemin başarılı olup olmadığını bildirir.
+  Ajan bu bildirimi iç modelini güncellemek için kullanabilir; ortamın durumu
+  hakkında başka hiçbir bilgi içermez.
 
 Bu modül grafik arayüzden tamamen bağımsızdır.
 """
@@ -57,6 +62,9 @@ class ReflexAgent:
         if status is Status.DIRTY:
             return self.clean_rule()
         return self.move_rule(location)
+
+    def action_result(self, action, succeeded):
+        """Refleks ajan eylem sonucunu kullanmaz; hiçbir şey saklamaz."""
 
     @staticmethod
     def clean_rule():

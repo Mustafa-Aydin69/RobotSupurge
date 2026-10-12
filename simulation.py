@@ -140,12 +140,22 @@ class Simulation:
     # Algı-karar-eylem döngüsü
     # ------------------------------------------------------------------
     def step(self):
-        """Tek döngü: algıla, karar ver, tek bir eylem uygula, kaydet."""
+        """Tek döngü: algıla, karar ver, tek bir eylem uygula, sonucu bildir, kaydet.
+
+        Eylemin sonucu ajana ``action_result`` ile bildirilir. Ortam eylemi
+        uygulayamazsa (``ValueError``) ajana başarısız olduğu bildirilir ve hata
+        yükseltilir; adım sayılmaz ve günlüğe yazılmaz.
+        """
         self._require(SimulationState.RUNNING)
 
         percept = self.environment.percept()   # algı
         action = self.agent.act(percept)       # karar
-        self.environment.execute(action)       # eylem
+        try:
+            self.environment.execute(action)   # eylem
+        except ValueError:
+            self.agent.action_result(action, succeeded=False)
+            raise
+        self.agent.action_result(action, succeeded=True)
 
         self.step_count += 1
         if action is Action.CLEAN:

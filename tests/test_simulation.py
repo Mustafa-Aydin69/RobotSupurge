@@ -285,5 +285,47 @@ class GridSimulationTests(unittest.TestCase):
             Simulation(rows=1, cols=1)
 
 
+class SpyAgent:
+    """Simülasyonun ajanla nasıl konuştuğunu kaydeden test ajanı."""
+
+    def __init__(self, action):
+        self.action = action
+        self.calls = []
+
+    def act(self, percept):
+        self.calls.append(("act", percept))
+        return self.action
+
+    def action_result(self, action, succeeded):
+        self.calls.append(("result", action, succeeded))
+
+
+class ActionResultTests(unittest.TestCase):
+    def test_success_is_reported_after_execution(self):
+        sim, _ = make_sim(location="A", statuses={"A": Status.DIRTY, "B": Status.CLEAN})
+        spy = SpyAgent(Action.CLEAN)
+        sim.agent = spy
+        sim.start()
+        sim.step()
+        self.assertEqual(spy.calls, [("act", ("A", Status.DIRTY)), ("result", Action.CLEAN, True)])
+        self.assertEqual(sim.environment.status_of("A"), Status.CLEAN)
+
+    def test_failure_is_reported_and_raised(self):
+        sim, _ = make_sim(location="A", statuses=ALL_CLEAN)
+        spy = SpyAgent(Action.LEFT)  # A'dan sola gitmek sınır dışıdır
+        sim.agent = spy
+        sim.start()
+        with self.assertRaises(ValueError):
+            sim.step()
+        self.assertEqual(spy.calls[-1], ("result", Action.LEFT, False))
+        self.assertEqual((sim.step_count, sim.log, sim.environment.location), (0, [], "A"))
+
+    def test_reflex_agent_ignores_result(self):
+        sim, _ = make_sim(location="A", statuses={"A": Status.DIRTY, "B": Status.DIRTY})
+        sim.start()
+        self.assertIsNone(sim.agent.action_result(Action.CLEAN, True))
+        self.assertEqual([sim.step().action for _ in range(3)], [Action.CLEAN, Action.RIGHT, Action.CLEAN])
+
+
 if __name__ == "__main__":
     unittest.main()
