@@ -29,6 +29,10 @@ from simulation import DirtRecord, Simulation, SimulationState
 DEFAULT_STEP_MS = 700
 MIN_STEP_MS, MAX_STEP_MS = 100, 5000
 DEFAULT_DIRT_SECONDS = 3.0
+CLOCK_REFRESH_MS = 200          # süre göstergesinin yenilenme aralığı
+MAX_LOG_LINES = 10000           # ekrandaki günlüğün en fazla satır sayısı
+LOG_TRIM_NOTICE = ("… Eski kayıtlar ekrandan kaldırıldı ({count} satır). "
+                   "Simülasyonun kendi günlüğü eksiksiz korunuyor.")
 MIN_DIRT_SECONDS, MAX_DIRT_SECONDS = 0.5, 60.0
 DEFAULT_ROWS, DEFAULT_COLS = 1, 2
 
@@ -288,6 +292,8 @@ class VacuumApp:
         self._dirt_seconds = DEFAULT_DIRT_SECONDS
         self._last_action = None
         self._last_plan_version = 0
+        self._clock_job = None          # süre göstergesi zamanlayıcısı
+        self._log_trimmed = 0           # ekrandan kaldırılan günlük satırı sayısı
 
         root.title("Robot Süpürge Ajanı")
         root.geometry("820x800")
@@ -511,6 +517,7 @@ class VacuumApp:
         # Yeni simülasyonda iki zamanlayıcı da tam aralıktan başlar.
         self.step_timer.start(self._read_step_ms())
         self.dirt_timer.start(self._read_dirt_ms())
+        self._start_clock()
         self._refresh()
 
     def toggle_pause(self):
@@ -520,6 +527,7 @@ class VacuumApp:
             # Kalan süreler korunur; duraklama boyunca hiçbir tetikleme olmaz.
             self.step_timer.pause()
             self.dirt_timer.pause()
+            self._stop_clock()
             self.simulation.pause()
             self._append_log("Simülasyon duraklatıldı.", "info")
         elif self.simulation.state is SimulationState.PAUSED:
@@ -527,6 +535,7 @@ class VacuumApp:
             self._append_log("Simülasyon devam ediyor.", "info")
             self.step_timer.resume()
             self.dirt_timer.resume()
+            self._start_clock()
         self._refresh()
 
     def stop(self):
@@ -617,6 +626,31 @@ class VacuumApp:
     def _cancel_timers(self):
         self.step_timer.cancel()
         self.dirt_timer.cancel()
+        self._stop_clock()
+
+    # ------------------------------------------------------------------
+    # Süre göstergesi (adım ve kirlenme zamanlayıcılarından bağımsız)
+    # ------------------------------------------------------------------
+    def _start_clock(self):
+        self._stop_clock()
+        self._clock_job = self.root.after(CLOCK_REFRESH_MS, self._on_clock_tick)
+
+    def _stop_clock(self):
+        if self._clock_job is not None:
+            self.root.after_cancel(self._clock_job)
+            self._clock_job = None
+
+    def _on_clock_tick(self):
+        """Yalnızca durum satırını yeniler; simülasyona dokunmaz.
+
+        Süre simülasyonun kendi saatinden okunduğu için duraklamada durur,
+        durdurulunca sabitlenir.
+        """
+        self._clock_job = None
+        if self.simulation is None or not self.simulation.is_running:
+            return
+        self._update_status()
+        self._clock_job = self.root.after(CLOCK_REFRESH_MS, self._on_clock_tick)
 
     def _read_step_ms(self):
         """Ayar alanını okur; geçersizse son geçerli değeri kullanır."""
@@ -642,15 +676,45 @@ class VacuumApp:
     # Günlük
     # ------------------------------------------------------------------
     def _append_log(self, line, tag=None):
-        self.log_text.configure(state="normal")
-        self.log_text.insert("end", line + "\n", tag or ())
-        self.log_text.configure(state="disabled")
-        self.log_text.see("end")
+        """Satır ekler; ekranda en fazla MAX_LOG_LINES kayıt tutar.
+
+        Otomatik kaydırma yalnızca kullanıcı zaten en alttaysa yapılır; geçmiş
+        kayıtlara bakan kullanıcının görünümü korunur.
+        """
+        text = self.log_text
+        # Pencere görünür değilken (ör. simge durumunda) kaydırma konumu
+        # güvenilir değildir; bu durumda takip sürdürülür.
+        at_bottom = not text.winfo_viewable() or text.yview()[1] >= 0.999
+        text.configure(state="normal")
+        text.insert("end", line + "\n", tag or ())
+        self._trim_log()
+        text.configure(state="disabled")
+        if at_bottom:
+            text.see("end")
+
+    def _log_line_count(self):
+        """Ekrandaki kayıt sayısı (kaldırma bilgisi satırı hariç)."""
+        lines = int(self.log_text.index("end-1c").split(".")[0]) - 1
+        return lines - (1 if self._log_trimmed else 0)
+
+    def _trim_log(self):
+        excess = self._log_line_count() - MAX_LOG_LINES
+        if excess <= 0:
+            return
+        text = self.log_text
+        first = 2 if self._log_trimmed else 1    # bilgi satırı en üstte kalır
+        text.delete(f"{first}.0", f"{first + excess}.0")
+        self._log_trimmed += excess
+        notice = LOG_TRIM_NOTICE.format(count=self._log_trimmed) + "\n"
+        if first == 2:
+            text.delete("1.0", "2.0")
+        text.insert("1.0", notice, "info")
 
     def _clear_log(self):
         self.log_text.configure(state="normal")
         self.log_text.delete("1.0", "end")
         self.log_text.configure(state="disabled")
+        self._log_trimmed = 0
 
     # ------------------------------------------------------------------
     # Görünüm güncelleme

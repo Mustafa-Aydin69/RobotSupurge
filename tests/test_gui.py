@@ -795,6 +795,112 @@ class WindowTests(unittest.TestCase):
         self.assertLessEqual(x1, app.model_canvas.winfo_width() + 2)
         self.assertLessEqual(y1, app.model_canvas.winfo_height() + 2)
 
+    def shown_elapsed(self):
+        import re
+        minutes, seconds = re.search(r"Süre: (\d+):(\d+\.\d)", self.app.status_var.get()).groups()
+        return int(minutes) * 60 + float(seconds)
+
+    def test_clock_updates_without_steps(self):
+        app = self.app
+        app.step_var.set("5000")      # bu sürede hiç adım atılmaz
+        app.dirt_var.set("60")
+        app.start()
+        self.pump(0.7)
+        self.assertEqual(app.simulation.step_count, 0)
+        self.assertGreaterEqual(self.shown_elapsed(), 0.4, "Süre adım olmadan da akmalı")
+
+    def test_clock_pauses_resumes_freezes_and_resets(self):
+        app = self.app
+        app.step_var.set("5000")
+        app.dirt_var.set("60")
+        app.start()
+        self.pump(0.6)
+        app.toggle_pause()
+        self.assertIsNone(app._clock_job)
+        paused_value = self.shown_elapsed()
+        self.pump(0.6)
+        self.assertEqual(self.shown_elapsed(), paused_value, "Duraklamada süre durmalı")
+        app.toggle_pause()
+        self.assertIsNotNone(app._clock_job)
+        self.pump(0.6)
+        resumed_value = self.shown_elapsed()
+        self.assertGreater(resumed_value, paused_value)
+        self.assertLess(resumed_value, paused_value + 1.0, "Devamda kaldığı yerden sürmeli")
+        app.stop()
+        self.assertIsNone(app._clock_job)
+        stopped_value = self.shown_elapsed()
+        self.pump(0.5)
+        self.assertEqual(self.shown_elapsed(), stopped_value, "Durdurunca sayaç sabit kalmalı")
+        app.start()
+        self.assertLess(self.shown_elapsed(), 0.3, "Yeniden başlatınca sıfırlanmalı")
+
+    def test_clock_does_not_touch_step_or_dirt_timers(self):
+        app = self.app
+        app.step_var.set("1000")
+        app.dirt_var.set("2")
+        app.start()
+        step_due, dirt_due = app.step_timer.remaining_ms, app.dirt_timer.remaining_ms
+        app._on_clock_tick()
+        self.assertLessEqual(app.step_timer.remaining_ms, step_due)
+        self.assertLessEqual(app.dirt_timer.remaining_ms, dirt_due)
+        self.assertEqual(app.simulation.step_count, 0)
+
+    def test_log_is_capped_on_screen_but_complete_in_simulation(self):
+        app = self.app
+        app.start()
+        app.step_timer.cancel()
+        app.dirt_timer.cancel()
+        with mock.patch("gui.MAX_LOG_LINES", 50):
+            for _ in range(130):
+                app._append_log(format_record(app.simulation.step()))
+        lines = self.log_lines()
+        self.assertEqual(len(lines), 51)                    # 50 kayıt + 1 bilgi satırı
+        self.assertIn("Eski kayıtlar ekrandan kaldırıldı", lines[0])
+        self.assertIn("81 satır", lines[0])                 # 1 başlangıç + 130 adım - 50
+        self.assertTrue(lines[-1].startswith("Adım  130"))
+        self.assertEqual(len(app.simulation.log), 130)      # simülasyonun günlüğü eksiksiz
+        app.stop()
+        app.start()                                         # yeni simülasyon: sayaç sıfırlanır
+        self.assertEqual(app._log_trimmed, 0)
+        self.assertNotIn("kaldırıldı", self.log_text_all())
+
+    def log_text_all(self):
+        return self.app.log_text.get("1.0", "end")
+
+    def test_autoscroll_respects_user_position(self):
+        app = self.app
+        self.root.deiconify()
+        self.root.update()
+        app.start()
+        app.step_timer.cancel()
+        app.dirt_timer.cancel()
+        for i in range(200):
+            app._append_log(f"satır {i}")
+        self.root.update()
+        self.assertGreaterEqual(app.log_text.yview()[1], 0.999, "En alttayken takip etmeli")
+        app.log_text.yview_moveto(0.0)
+        self.root.update()
+        for i in range(50):
+            app._append_log(f"yeni {i}")
+        self.root.update()
+        self.assertEqual(app.log_text.yview()[0], 0.0, "Geçmişe bakan kullanıcının görünümü korunmalı")
+        app.log_text.yview_moveto(1.0)
+        self.root.update()
+        app._append_log("son")
+        self.root.update()
+        self.assertGreaterEqual(app.log_text.yview()[1], 0.999)
+
+    def test_autoscroll_continues_while_window_hidden(self):
+        app = self.app                                       # pencere gizli (withdraw)
+        app.start()
+        app.step_timer.cancel()
+        app.dirt_timer.cancel()
+        for i in range(300):
+            app._append_log(f"satır {i}")
+        self.root.deiconify()
+        self.root.update()
+        self.assertGreaterEqual(app.log_text.yview()[1], 0.999, "Gizliyken eklenen satırlar takip edilmeli")
+
     def test_invalid_interval_falls_back_to_last_valid(self):
         self.app.step_var.set("abc")
         self.assertEqual(self.app._read_step_ms(), 700)
