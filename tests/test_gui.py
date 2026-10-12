@@ -7,9 +7,12 @@ bir Tkinter penceresi açar; ekran yoksa atlanır.
 import tkinter as tk
 from tkinter import ttk
 import unittest
+from unittest import mock
 
 from environment import Action, Status
-from gui import PausableTimer, VacuumApp, format_elapsed, format_record, parse_seed
+from gui import (
+    PausableTimer, VacuumApp, compute_layout, format_elapsed, format_record, parse_grid_size, parse_seed,
+)
 from simulation import DirtRecord, SimulationState, StepRecord
 
 
@@ -21,6 +24,13 @@ class FormatTests(unittest.TestCase):
     def test_move_record_format(self):
         self.assertIn("Eylem: Sağa git", format_record(StepRecord(1, 0, "A", Status.CLEAN, Action.RIGHT)))
         self.assertIn("Eylem: Sola git", format_record(StepRecord(1, 0, "B", Status.CLEAN, Action.LEFT)))
+
+    def test_vertical_moves_and_grid_room_names(self):
+        self.assertEqual(
+            format_record(StepRecord(7, 3.0, "B3", Status.CLEAN, Action.UP)),
+            "Adım    7 | Süre: 00:03.0 | Oda: B3 | Algı: Temiz | Eylem: Yukarı git",
+        )
+        self.assertIn("Eylem: Aşağı git", format_record(StepRecord(1, 0, "A1", Status.CLEAN, Action.DOWN)))
 
     def test_dirt_record_format(self):
         line = format_record(DirtRecord(65.0, ("A", "B")))
@@ -35,6 +45,40 @@ class FormatTests(unittest.TestCase):
         self.assertEqual(parse_seed(" 42 "), 42)
         with self.assertRaises(ValueError):
             parse_seed("abc")
+
+
+class GridSettingTests(unittest.TestCase):
+    def test_parse_grid_size_accepts_valid_sizes(self):
+        self.assertEqual(parse_grid_size("1", "2"), (1, 2))
+        self.assertEqual(parse_grid_size(" 6 ", "6"), (6, 6))
+
+    def test_parse_grid_size_rejects_with_turkish_message(self):
+        cases = {("1", "1"): "en az iki oda", ("7", "2"): "1 ile 6", ("0", "3"): "1 ile 6",
+                 ("a", "2"): "tam sayı", ("", "2"): "tam sayı", ("2.5", "2"): "tam sayı"}
+        for (rows, cols), fragment in cases.items():
+            with self.subTest(rows=rows, cols=cols):
+                with self.assertRaises(ValueError) as ctx:
+                    parse_grid_size(rows, cols)
+                self.assertIn(fragment, str(ctx.exception))
+
+    def test_layout_fits_canvas_without_overlap(self):
+        for width, height in [(560, 240), (800, 400), (660, 230)]:
+            for rows in range(1, 7):
+                for cols in range(1, 7):
+                    if rows * cols < 2:
+                        continue
+                    left, top, cell_w, cell_h, gap = compute_layout(width, height, rows, cols)
+                    with self.subTest(size=(width, height), grid=(rows, cols)):
+                        self.assertGreaterEqual(left, 0)
+                        self.assertGreaterEqual(top, 0)
+                        self.assertLessEqual(left + cols * cell_w + (cols - 1) * gap, width + 1e-6)
+                        self.assertLessEqual(top + rows * cell_h + (rows - 1) * gap, height + 1e-6)
+                        self.assertGreater(gap, 0)
+                        self.assertGreater(min(cell_w, cell_h), 20)
+
+    def test_1x2_layout_matches_phase1_look(self):
+        # Faz 1'deki 560×240 tuvalde 20 px boşluk ve 250×200 odalar.
+        self.assertEqual(compute_layout(560, 240, 1, 2), (20.0, 20.0, 250.0, 200.0, 20.0))
 
 
 class FakeScheduler:
@@ -318,6 +362,87 @@ class WindowTests(unittest.TestCase):
         entry = [w for w in app.root.winfo_children()[0].winfo_children() if isinstance(w, ttk.Entry)][0]
         app._on_space_key(type("Event", (), {"widget": entry})())
         self.assertIs(app.simulation.state, SimulationState.RUNNING)
+
+    def room_items(self):
+        return self.app.canvas.find_withtag("room")
+
+    def test_grid_is_drawn_with_all_rooms_and_one_robot(self):
+        app = self.app
+        for rows, cols in [(1, 2), (3, 4), (6, 6)]:
+            app.rows_var.set(str(rows))
+            app.cols_var.set(str(cols))
+            app.start()
+            self.root.update()
+            with self.subTest(grid=(rows, cols)):
+                self.assertEqual(len(self.room_items()), rows * cols)
+                self.assertEqual(len(app.canvas.find_withtag(f"room:{app.simulation.environment.location}")), 1)
+                self.assertGreater(len(app.canvas.find_withtag("robot")), 0)
+                self.assertIn(f"({rows}×{cols}", self.log_lines()[0])
+            app.stop()
+
+    def test_grid_moves_are_logged_in_turkish(self):
+        app = self.app
+        app.rows_var.set("3")
+        app.cols_var.set("3")
+        app.start()
+        self.pump(1.5)
+        lines = [line for line in self.log_lines() if line.startswith("Adım")]
+        self.assertTrue(lines)
+        self.assertTrue(all(any(w in line for w in ("Temizle", "Sağa", "Sola", "Yukarı", "Aşağı")) for line in lines))
+        self.assertTrue(all("Oda: " in line and line.split("Oda: ")[1][:2] in app.simulation.environment.rooms
+                            for line in lines))
+
+    def test_grid_size_locked_while_running_and_paused(self):
+        app = self.app
+        self.assertEqual(str(app.rows_spin["state"]), "normal")
+        app.start()
+        self.assertEqual(str(app.rows_spin["state"]), "disabled")
+        self.assertEqual(str(app.cols_spin["state"]), "disabled")
+        app.toggle_pause()
+        self.assertEqual(str(app.rows_spin["state"]), "disabled")
+        app.stop()
+        self.assertEqual(str(app.rows_spin["state"]), "normal")
+        self.assertEqual(str(app.cols_spin["state"]), "normal")
+
+    def test_invalid_grid_size_shows_turkish_error(self):
+        app = self.app
+        for rows, cols in [("1", "1"), ("7", "3"), ("x", "2")]:
+            app.rows_var.set(rows)
+            app.cols_var.set(cols)
+            with mock.patch("gui.messagebox.showerror") as showerror:
+                app.start()
+            with self.subTest(rows=rows, cols=cols):
+                showerror.assert_called_once()
+                self.assertEqual(showerror.call_args[0][0], "Geçersiz ortam boyutu")
+                self.assertIsNone(app.simulation)
+
+    def test_preview_follows_settings_when_idle(self):
+        app = self.app
+        app.rows_var.set("2")
+        app.cols_var.set("5")
+        self.root.update()
+        self.assertEqual(len(self.room_items()), 10)
+
+    def test_redraw_on_resize_keeps_grid_inside_canvas(self):
+        app = self.app
+        self.root.deiconify()
+        app.rows_var.set("6")
+        app.cols_var.set("6")
+        app.start()
+        for geometry in ("680x620", "1000x900"):
+            self.root.geometry(geometry)
+            self.root.update()
+            width, height = app.canvas.winfo_width(), app.canvas.winfo_height()
+            with self.subTest(geometry=geometry):
+                self.assertEqual(len(self.room_items()), 36)
+                x0, y0, x1, y1 = app.canvas.bbox("room")
+                self.assertGreaterEqual(x0, -2)
+                self.assertGreaterEqual(y0, -2)
+                self.assertLessEqual(x1, width + 2)
+                self.assertLessEqual(y1, height + 2)
+                # Kontroller ve günlük görünür kalmalı.
+                self.assertTrue(app.start_button.winfo_ismapped())
+                self.assertTrue(app.log_text.winfo_ismapped())
 
     def test_invalid_interval_falls_back_to_last_valid(self):
         self.app.step_var.set("abc")

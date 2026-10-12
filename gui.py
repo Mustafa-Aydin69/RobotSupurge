@@ -14,10 +14,7 @@ import time
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from environment import Action, Grid, Status
-
-# Faz 2 arayüz adımına kadar arayüz 1×2 ortamı çizer.
-ROOMS = Grid().rooms
+from environment import MAX_GRID_SIZE, MIN_GRID_SIZE, Action, Grid, Status
 from simulation import DirtRecord, Simulation, SimulationState
 
 # ----------------------------------------------------------------------
@@ -27,12 +24,19 @@ DEFAULT_STEP_MS = 700
 MIN_STEP_MS, MAX_STEP_MS = 100, 5000
 DEFAULT_DIRT_SECONDS = 3.0
 MIN_DIRT_SECONDS, MAX_DIRT_SECONDS = 0.5, 60.0
+DEFAULT_ROWS, DEFAULT_COLS = 1, 2
 
 # ----------------------------------------------------------------------
 # Arayüz metinleri (iç adlar İngilizce, ekranda Türkçe)
 # ----------------------------------------------------------------------
 STATUS_TEXT = {Status.CLEAN: "Temiz", Status.DIRTY: "Kirli"}
-ACTION_TEXT = {Action.CLEAN: "Temizle", Action.RIGHT: "Sağa git", Action.LEFT: "Sola git"}
+ACTION_TEXT = {
+    Action.CLEAN: "Temizle",
+    Action.RIGHT: "Sağa git",
+    Action.LEFT: "Sola git",
+    Action.UP: "Yukarı git",
+    Action.DOWN: "Aşağı git",
+}
 
 # ----------------------------------------------------------------------
 # Renkler
@@ -72,6 +76,36 @@ def parse_seed(text):
     if not text:
         return None
     return int(text)  # geçersizse ValueError
+
+
+def parse_grid_size(rows_text, cols_text):
+    """Satır ve sütun metnini doğrulayıp ``(rows, cols)`` döndürür.
+
+    Geçersizse kullanıcıya gösterilecek Türkçe mesajla ``ValueError`` fırlatır.
+    """
+    try:
+        rows, cols = int(rows_text.strip()), int(cols_text.strip())
+    except ValueError:
+        raise ValueError("Satır ve sütun sayısı tam sayı olmalıdır.") from None
+    Grid(rows, cols)  # sınırları ve en az iki oda kuralını denetler
+    return rows, cols
+
+
+def compute_layout(width, height, rows, cols):
+    """Odaları verilen tuval alanına sığdıran yerleşimi hesaplar.
+
+    ``(left, top, cell_w, cell_h, gap)`` döndürür. Grid tuvalin ortasına
+    yerleştirilir; boşluklar grid büyüdükçe küçülür.
+    """
+    gap = max(6.0, min(20.0, 60.0 / max(rows, cols)))
+    cell_w = max(1.0, (width - gap * (cols + 1)) / cols)
+    cell_h = max(1.0, (height - gap * (rows + 1)) / rows)
+    # Çok uzun ya da çok yassı odalar oluşmasın.
+    cell_w = min(cell_w, cell_h * 1.6)
+    cell_h = min(cell_h, cell_w * 1.2)
+    grid_w = cols * cell_w + (cols - 1) * gap
+    grid_h = rows * cell_h + (rows - 1) * gap
+    return (width - grid_w) / 2, (height - grid_h) / 2, cell_w, cell_h, gap
 
 
 class PausableTimer:
@@ -150,9 +184,8 @@ class PausableTimer:
 class VacuumApp:
     """Robot süpürge simülasyonunun ana penceresi."""
 
-    CANVAS_WIDTH = 560
+    CANVAS_WIDTH = 560    # başlangıç boyutu; pencereyle birlikte büyür
     CANVAS_HEIGHT = 240
-    ROOM_MARGIN = 20
 
     def __init__(self, root):
         self.root = root
@@ -164,7 +197,8 @@ class VacuumApp:
         self._last_action = None
 
         root.title("Robot Süpürge Ajanı")
-        root.minsize(620, 600)
+        root.geometry("820x800")
+        root.minsize(680, 620)
         root.protocol("WM_DELETE_WINDOW", self.on_close)
 
         self._build_settings()
@@ -173,8 +207,11 @@ class VacuumApp:
         self._build_status()
         self._build_log()
 
+        # Tuval ve günlük pencereyle birlikte büyür; ayarlar ve düğmeler her
+        # zaman üstte görünür kalır.
         root.columnconfigure(0, weight=1)
-        root.rowconfigure(4, weight=1)
+        root.rowconfigure(2, weight=3)
+        root.rowconfigure(4, weight=2)
 
         root.bind("<space>", self._on_space_key)
         root.bind("<Escape>", self._on_escape_key)
@@ -207,11 +244,30 @@ class VacuumApp:
         self.seed_var = tk.StringVar()
         ttk.Entry(frame, textvariable=self.seed_var, width=10).grid(row=0, column=5, padx=(4, 0))
 
+        ttk.Label(frame, text="Satır:").grid(row=1, column=0, sticky="w", pady=(6, 0))
+        self.rows_var = tk.StringVar(value=str(DEFAULT_ROWS))
+        self.rows_spin = ttk.Spinbox(
+            frame, textvariable=self.rows_var, from_=MIN_GRID_SIZE, to=MAX_GRID_SIZE, width=7,
+        )
+        self.rows_spin.grid(row=1, column=1, padx=(4, 16), pady=(6, 0))
+
+        ttk.Label(frame, text="Sütun:").grid(row=1, column=2, sticky="w", pady=(6, 0))
+        self.cols_var = tk.StringVar(value=str(DEFAULT_COLS))
+        self.cols_spin = ttk.Spinbox(
+            frame, textvariable=self.cols_var, from_=MIN_GRID_SIZE, to=MAX_GRID_SIZE, width=6,
+        )
+        self.cols_spin.grid(row=1, column=3, padx=(4, 16), pady=(6, 0))
+
+        # Simülasyon çalışmıyorken boyut değişikliği tuvalde önizlenir.
+        self.rows_var.trace_add("write", lambda *_: self._on_grid_setting_changed())
+        self.cols_var.trace_add("write", lambda *_: self._on_grid_setting_changed())
+
         ttk.Label(
             frame,
-            text="Aralıklar çalışma sırasında da değiştirilebilir; bir sonraki tetiklemede geçerli olur.",
+            text=("Aralıklar çalışırken de değiştirilebilir. Satır/sütun (1–6, en az 2 oda) "
+                  "yalnızca Başlat'ta uygulanır."),
             foreground="#555",
-        ).grid(row=1, column=0, columnspan=6, sticky="w", pady=(6, 0))
+        ).grid(row=2, column=0, columnspan=6, sticky="w", pady=(6, 0))
 
     def _build_controls(self):
         frame = ttk.Frame(self.root, padding=(10, 4))
@@ -234,11 +290,16 @@ class VacuumApp:
             self.root, width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT,
             background="white", highlightthickness=0,
         )
-        self.canvas.grid(row=2, column=0, padx=10, pady=4)
+        self.canvas.grid(row=2, column=0, sticky="nsew", padx=10, pady=4)
+        # Pencere yeniden boyutlandırıldığında grid yeniden hesaplanır.
+        self.canvas.bind("<Configure>", lambda _event: self._draw())
 
     def _build_status(self):
         self.status_var = tk.StringVar()
-        ttk.Label(self.root, textvariable=self.status_var, padding=(10, 2)).grid(row=3, column=0, sticky="w")
+        label = ttk.Label(self.root, textvariable=self.status_var, padding=(10, 2))
+        label.grid(row=3, column=0, sticky="ew")
+        # Dar pencerede durum satırı kesilmek yerine alt satıra geçer.
+        label.bind("<Configure>", lambda event: label.configure(wraplength=max(200, event.width - 20)))
 
     def _build_log(self):
         frame = ttk.LabelFrame(self.root, text="Algı ve eylem günlüğü", padding=4)
@@ -246,11 +307,13 @@ class VacuumApp:
         frame.columnconfigure(0, weight=1)
         frame.rowconfigure(0, weight=1)
 
-        self.log_text = tk.Text(frame, height=12, wrap="none", font=("Consolas", 10), state="disabled")
+        self.log_text = tk.Text(frame, height=8, wrap="none", font=("Consolas", 10), state="disabled")
         scrollbar = ttk.Scrollbar(frame, orient="vertical", command=self.log_text.yview)
-        self.log_text.configure(yscrollcommand=scrollbar.set)
+        x_scrollbar = ttk.Scrollbar(frame, orient="horizontal", command=self.log_text.xview)
+        self.log_text.configure(yscrollcommand=scrollbar.set, xscrollcommand=x_scrollbar.set)
         self.log_text.grid(row=0, column=0, sticky="nsew")
         scrollbar.grid(row=0, column=1, sticky="ns")
+        x_scrollbar.grid(row=1, column=0, sticky="ew")
 
         self.log_text.tag_configure("dirt", foreground="#9a5b13")
         self.log_text.tag_configure("info", foreground="#1d70b8")
@@ -269,16 +332,17 @@ class VacuumApp:
         except ValueError:
             messagebox.showerror("Geçersiz seed", "Seed boş bırakılmalı ya da bir tam sayı olmalıdır.")
             return
+        try:
+            rows, cols = parse_grid_size(self.rows_var.get(), self.cols_var.get())
+        except ValueError as exc:
+            messagebox.showerror("Geçersiz ortam boyutu", str(exc))
+            return
 
         self._cancel_timers()
-        self.simulation = Simulation(seed=seed)
+        self.simulation = Simulation(seed=seed, rows=rows, cols=cols)
         self._last_action = None
         self._clear_log()
-
-        env = self.simulation.environment
-        rooms = ", ".join(f"{room}: {STATUS_TEXT[env.status_of(room)]}" for room in ROOMS)
-        seed_text = f" (seed: {seed})" if seed is not None else ""
-        self._append_log(f"Simülasyon başladı{seed_text}. Ajan {env.location} odasında; {rooms}", "info")
+        self._append_log(self._start_message(seed), "info")
 
         self.simulation.start()
         # Yeni simülasyonda iki zamanlayıcı da tam aralıktan başlar.
@@ -314,6 +378,27 @@ class VacuumApp:
             f"Simülasyon kullanıcı tarafından durduruldu. Toplam {self.simulation.step_count} adım.", "info"
         )
         self._refresh()
+
+    def _start_message(self, seed):
+        env = self.simulation.environment
+        seed_text = f", seed: {seed}" if seed is not None else ""
+        header = f"Simülasyon başladı ({env.grid.rows}×{env.grid.cols}{seed_text})."
+        if env.grid.is_two_room:
+            rooms = ", ".join(f"{room}: {STATUS_TEXT[env.status_of(room)]}" for room in env.rooms)
+            return f"{header} Ajan {env.location} odasında; {rooms}"
+        dirty = [room for room in env.rooms if env.status_of(room) is Status.DIRTY]
+        dirty_text = ", ".join(dirty) if dirty else "yok"
+        return (f"{header} Ajan {env.location} odasında; kirli odalar "
+                f"({len(dirty)}/{len(env.rooms)}): {dirty_text}")
+
+    def _on_grid_setting_changed(self):
+        if not self._is_active():
+            self._draw()
+
+    def _is_active(self):
+        return self.simulation is not None and self.simulation.state in (
+            SimulationState.RUNNING, SimulationState.PAUSED,
+        )
 
     def on_close(self):
         self._cancel_timers()
@@ -406,6 +491,9 @@ class VacuumApp:
             text="Devam" if state is SimulationState.PAUSED else "Duraklat",
         )
         self.stop_button.configure(state="normal" if active else "disabled")
+        # Grid boyutu çalışırken ve duraklatılmışken değiştirilemez.
+        for spin in (self.rows_spin, self.cols_spin):
+            spin.configure(state="disabled" if active else "normal")
 
     def _update_status(self):
         sim = self.simulation
@@ -413,23 +501,52 @@ class VacuumApp:
             self.status_var.set("Durum: Hazır — başlamak için 'Başlat' düğmesine basın.")
             return
         last = ACTION_TEXT[self._last_action] if self._last_action else "—"
+        env = sim.environment
+        dirty = sum(1 for status in env.statuses().values() if status is Status.DIRTY)
         self.status_var.set(
-            f"Durum: {sim.state.value}   |   Adım: {sim.step_count}   |   "
+            f"Durum: {sim.state.value}   |   Ortam: {env.grid.rows}×{env.grid.cols}   |   "
+            f"Kirli oda: {dirty}/{len(env.rooms)}   |   Adım: {sim.step_count}   |   "
             f"Temizleme: {sim.clean_count}   |   Hareket: {sim.move_count}   |   "
             f"Süre: {format_elapsed(sim.elapsed)}   |   Son eylem: {last}"
         )
 
+    def _displayed(self):
+        """Çizilecek grid ve (varsa) ortam.
+
+        Simülasyon çalışıyor ya da duraklatılmışsa onun ortamı çizilir. Aksi
+        halde ayarlardaki boyut önizlenir; durdurulmuş simülasyonun ortamı,
+        ayarlar değişmediyse son hâliyle ekranda kalır.
+        """
+        if self._is_active():
+            env = self.simulation.environment
+            return env.grid, env
+        try:
+            grid = Grid(*parse_grid_size(self.rows_var.get(), self.cols_var.get()))
+        except ValueError:
+            grid = Grid(DEFAULT_ROWS, DEFAULT_COLS)
+        if self.simulation is not None and self.simulation.environment.grid == grid:
+            return grid, self.simulation.environment
+        return grid, None
+
     def _draw(self):
         c = self.canvas
         c.delete("all")
-        margin = self.ROOM_MARGIN
-        room_width = (self.CANVAS_WIDTH - margin * (len(ROOMS) + 1)) / len(ROOMS)
-        top, bottom = margin, self.CANVAS_HEIGHT - margin
+        width = c.winfo_width() if c.winfo_width() > 1 else self.CANVAS_WIDTH
+        height = c.winfo_height() if c.winfo_height() > 1 else self.CANVAS_HEIGHT
 
-        env = self.simulation.environment if self.simulation else None
-        for index, room in enumerate(ROOMS):
-            left = margin + index * (room_width + margin)
-            right = left + room_width
+        grid, env = self._displayed()
+        left0, top0, cell_w, cell_h, gap = compute_layout(width, height, grid.rows, grid.cols)
+        size = min(cell_w, cell_h)
+        title_font = ("Segoe UI", max(7, min(13, int(size * 0.14))), "bold")
+        status_font = ("Segoe UI", max(7, min(11, int(size * 0.11))))
+        border = 2 if size >= 50 else 1
+        title_y = max(9, size * 0.09)
+
+        for room in grid.rooms:
+            row, col = grid.position_of(room)
+            left = left0 + col * (cell_w + gap)
+            top = top0 + row * (cell_h + gap)
+            right, bottom = left + cell_w, top + cell_h
             status = env.status_of(room) if env else None
             is_current = env is not None and env.location == room
 
@@ -437,27 +554,42 @@ class VacuumApp:
             c.create_rectangle(
                 left, top, right, bottom, fill=fill,
                 outline=COLOR_ACTIVE_BORDER if is_current else "#666",
-                width=4 if is_current else 2,
+                width=border * 2 if is_current else border,
+                tags=("room", f"room:{room}"),
             )
             if status is Status.DIRTY:
+                scale = size / 200
                 for rx, ry, radius in DIRT_SPOTS:
-                    x = left + rx * room_width
-                    y = top + ry * (bottom - top)
-                    c.create_oval(x - radius, y - radius, x + radius, y + radius, fill=COLOR_DIRT_SPOT, outline="")
+                    x = left + rx * cell_w
+                    # Grid'de lekeler oda adının altındaki bölgeye yerleştirilir.
+                    y = top + (ry if grid.is_two_room else 0.3 + ry * 0.6) * cell_h
+                    r = max(2.0, radius * scale)
+                    y = max(y, top + title_y + 8 + r)  # leke oda adının üstüne binmesin
+                    c.create_oval(x - r, y - r, x + r, y + r, fill=COLOR_DIRT_SPOT, outline="", tags=("dirt",))
 
-            c.create_text((left + right) / 2, top + 18, text=f"{room} Odası", font=("Segoe UI", 13, "bold"))
-            status_label = STATUS_TEXT[status] if status else "—"
-            c.create_text((left + right) / 2, bottom - 16, text=status_label, font=("Segoe UI", 11))
+            title = f"{room} Odası" if grid.is_two_room else room
+            c.create_text((left + right) / 2, top + title_y, text=title, font=title_font)
+            if size >= 60:
+                status_label = STATUS_TEXT[status] if status else "—"
+                c.create_text((left + right) / 2, bottom - max(8, size * 0.08), text=status_label, font=status_font)
 
             if is_current:
-                self._draw_robot((left + right) / 2, (top + bottom) / 2 + 6)
+                # Küçük odalarda durum yazısı yok; robot oda adından uzaklaşır.
+                offset = 0.03 if size >= 60 else 0.18
+                self._draw_robot((left + right) / 2, (top + bottom) / 2 + size * offset, size)
 
-    def _draw_robot(self, x, y):
+    def _draw_robot(self, x, y, size):
         c = self.canvas
-        r = 30
-        c.create_oval(x - r, y - r, x + r, y + r, fill=COLOR_ROBOT, outline=COLOR_ROBOT_RING, width=4)
-        c.create_oval(x - 8, y - r + 6, x + 8, y - r + 22, fill=COLOR_ROBOT_RING, outline="")
-        c.create_text(x, y + 8, text="Robot", fill="white", font=("Segoe UI", 9, "bold"))
+        r = max(6.0, min(30.0, size * 0.22))
+        ring = max(1, round(r / 7.5))
+        c.create_oval(x - r, y - r, x + r, y + r, fill=COLOR_ROBOT, outline=COLOR_ROBOT_RING,
+                      width=ring, tags=("robot",))
+        eye = r * 0.27
+        c.create_oval(x - eye, y - r + r * 0.2, x + eye, y - r + r * 0.2 + 2 * eye,
+                      fill=COLOR_ROBOT_RING, outline="", tags=("robot",))
+        if r >= 18:
+            c.create_text(x, y + r * 0.27, text="Robot", fill="white",
+                          font=("Segoe UI", max(7, int(r * 0.3)), "bold"), tags=("robot",))
 
 
 def run():
