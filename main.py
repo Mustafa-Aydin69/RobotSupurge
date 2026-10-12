@@ -6,8 +6,8 @@
 # Testler       : python -m unittest discover -s tests -v
 #
 # Dosyalar:
-#   environment.py  iki odalı ortam (algılama, temizleme, hareket, kirlenme)
-#   agents.py       basit refleks ajan
+#   environment.py  grid ve ortam (algılama, temizleme, hareket, kirlenme)
+#   agents.py       basit refleks ajan (1×2 tablo, grid'de rastgele geçerli hareket)
 #   simulation.py   algı-karar-eylem döngüsü ve günlük (arayüzden bağımsız)
 #   gui.py          Tkinter arayüzü
 """Uygulamanın giriş noktası."""
