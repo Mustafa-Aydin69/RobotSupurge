@@ -77,8 +77,8 @@ MODEL_CATEGORY_FILL = {
 }
 MODEL_PANEL_TITLE = "Ajanın iç modeli (gerçek durum değil)"
 TWO_ROOM_MODEL_NOTE = (
-    "Not: 1×2 ortamda her odadan yalnızca bir geçerli hareket olduğu için model tabanlı "
-    "ajanın hareketleri refleks ajanla aynı olabilir. Fark iç modelde görülür."
+    "Not: 1×2 ortamda her odadan yalnızca bir geçerli hareket olduğu için bu ajanın "
+    "hareketleri refleks ajanla aynı olabilir. Fark iç modelde görülür."
 )
 
 # Kirli odadaki lekelerin oda içindeki göreli konumları (x, y, yarıçap)
@@ -139,6 +139,11 @@ def compute_layout(width, height, rows, cols):
     grid_w = cols * cell_w + (cols - 1) * gap
     grid_h = rows * cell_h + (rows - 1) * gap
     return (width - grid_w) / 2, (height - grid_h) / 2, cell_w, cell_h, gap
+
+
+def agent_has_model(agent_type):
+    """Ajan türü bir iç model kopyası sunuyor mu? (Panel bu yeteneğe göre gösterilir.)"""
+    return hasattr(AGENT_TYPES[agent_type], "model_snapshot")
 
 
 def stale_threshold(grid):
@@ -637,7 +642,7 @@ class VacuumApp:
         env = sim.environment
         dirty = sum(1 for status in env.statuses().values() if status is Status.DIRTY)
         known = ""
-        if sim.agent_type == "model":
+        if agent_has_model(sim.agent_type):
             known = f"Bilinen oda: {len(sim.agent.model_snapshot().observations)}/{len(env.rooms)}   |   "
         self.status_var.set(
             f"Durum: {sim.state.value}   |   {AGENT_TYPE_TEXT[sim.agent_type]}   |   "
@@ -669,14 +674,14 @@ class VacuumApp:
 
     def _displayed_snapshot(self, env):
         """Model panelinin kaynağı: yalnızca ajanın salt okunur model kopyası."""
-        if env is not None and self.simulation is not None and self.simulation.agent_type == "model":
+        if env is not None and self.simulation is not None and agent_has_model(self.simulation.agent_type):
             return self.simulation.agent.model_snapshot()
         return empty_snapshot()
 
     def _draw(self):
         grid, env, agent_type = self._displayed()
         self._draw_environment(grid, env)
-        show_model = agent_type == "model"
+        show_model = agent_has_model(agent_type)
         if show_model != (self.model_frame.winfo_manager() == "grid"):
             if show_model:
                 self.model_frame.grid()

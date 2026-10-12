@@ -516,6 +516,23 @@ class WindowTests(unittest.TestCase):
         self.root.update()
         self.assertEqual(app.model_frame.winfo_manager(), "")
 
+    def test_model_panel_depends_on_agent_capability(self):
+        from gui import agent_has_model
+        self.assertEqual(
+            {key: agent_has_model(key) for key in ("reflex", "model", "goal")},
+            {"reflex": False, "model": True, "goal": True},
+        )
+        app = self.app
+        app.agent_var.set("Amaç Tabanlı Ajan")
+        self.root.update()
+        self.assertEqual(app.model_frame.winfo_manager(), "grid")
+        app.rows_var.set("3")
+        app.cols_var.set("3")
+        app.start()
+        self.pump(0.5)
+        self.assertEqual(app.simulation.agent_type, "goal")
+        self.assertIn("Bilinen oda", app.status_var.get())
+
     def test_model_panel_starts_unknown_and_follows_snapshot(self):
         app = self.app
         app.agent_var.set("Model Tabanlı Ajan")
