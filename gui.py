@@ -5,8 +5,12 @@ içermez; ``Simulation`` nesnesini iki bağımsız zamanlayıcıyla sürer:
 
 * adım zamanlayıcısı ``Simulation.step()`` çağırır,
 * kirlenme zamanlayıcısı ``Simulation.dirty_tick()`` çağırır.
+
+Zamanlayıcılar duraklatıldığında kalan sürelerini korur ve devam edildiğinde
+o süreden devam eder.
 """
 
+import time
 import tkinter as tk
 from tkinter import messagebox, ttk
 
@@ -67,6 +71,79 @@ def parse_seed(text):
     return int(text)  # geçersizse ValueError
 
 
+class PausableTimer:
+    """Duraklatılabilen tek seferlik zamanlayıcı.
+
+    ``scheduler`` Tkinter'ın ``after`` / ``after_cancel`` metodlarına sahip bir
+    nesnedir (pencere ya da testlerde sahte bir zamanlayıcı). Duraklatıldığında
+    kalan süreyi saklar, devam edildiğinde yalnızca kalan süre kadar bekler.
+    """
+
+    def __init__(self, scheduler, callback, clock=time.monotonic):
+        self._scheduler = scheduler
+        self._callback = callback
+        self._clock = clock
+        self._job = None
+        self._due = None          # bekleyen tetiklemenin saati (saniye)
+        self._remaining = None    # duraklatıldığında kalan süre (saniye)
+
+    @property
+    def is_pending(self):
+        """Zamanlayıcı şu an tetiklenmeyi bekliyorsa True."""
+        return self._job is not None
+
+    @property
+    def is_paused(self):
+        return self._remaining is not None
+
+    @property
+    def remaining_ms(self):
+        """Tetiklenmeye kalan süre (ms); bekleyen tetikleme yoksa None."""
+        if self._remaining is not None:
+            return self._remaining * 1000
+        if self._due is not None:
+            return max(0.0, self._due - self._clock()) * 1000
+        return None
+
+    def start(self, delay_ms):
+        """Önceki bekleyen tetiklemeyi iptal edip tam aralıkla yeniden kurar."""
+        self.cancel()
+        self._schedule(delay_ms / 1000)
+
+    def pause(self):
+        """Bekleyen tetiklemeyi iptal eder ve kalan süreyi saklar."""
+        if self._job is None:
+            return
+        self._remaining = max(0.0, self._due - self._clock())
+        self._scheduler.after_cancel(self._job)
+        self._job = None
+        self._due = None
+
+    def resume(self):
+        """Duraklatıldığı andaki kalan süreden devam eder."""
+        if self._remaining is None:
+            return
+        remaining, self._remaining = self._remaining, None
+        self._schedule(remaining)
+
+    def cancel(self):
+        """Bekleyen ya da duraklatılmış tetiklemeyi tamamen iptal eder."""
+        if self._job is not None:
+            self._scheduler.after_cancel(self._job)
+        self._job = None
+        self._due = None
+        self._remaining = None
+
+    def _schedule(self, seconds):
+        self._due = self._clock() + seconds
+        self._job = self._scheduler.after(round(seconds * 1000), self._fire)
+
+    def _fire(self):
+        self._job = None
+        self._due = None
+        self._callback()
+
+
 class VacuumApp:
     """Robot süpürge simülasyonunun ana penceresi."""
 
@@ -77,8 +154,8 @@ class VacuumApp:
     def __init__(self, root):
         self.root = root
         self.simulation = None
-        self._step_job = None
-        self._dirt_job = None
+        self.step_timer = PausableTimer(root, self._on_step_timer)
+        self.dirt_timer = PausableTimer(root, self._on_dirt_timer)
         self._step_ms = DEFAULT_STEP_MS
         self._dirt_seconds = DEFAULT_DIRT_SECONDS
         self._last_action = None
@@ -201,20 +278,25 @@ class VacuumApp:
         self._append_log(f"Simülasyon başladı{seed_text}. Ajan {env.location} odasında; {rooms}", "info")
 
         self.simulation.start()
-        self._schedule_timers()
+        # Yeni simülasyonda iki zamanlayıcı da tam aralıktan başlar.
+        self.step_timer.start(self._read_step_ms())
+        self.dirt_timer.start(self._read_dirt_ms())
         self._refresh()
 
     def toggle_pause(self):
         if self.simulation is None:
             return
         if self.simulation.state is SimulationState.RUNNING:
-            self._cancel_timers()
+            # Kalan süreler korunur; duraklama boyunca hiçbir tetikleme olmaz.
+            self.step_timer.pause()
+            self.dirt_timer.pause()
             self.simulation.pause()
             self._append_log("Simülasyon duraklatıldı.", "info")
         elif self.simulation.state is SimulationState.PAUSED:
             self.simulation.resume()
             self._append_log("Simülasyon devam ediyor.", "info")
-            self._schedule_timers()
+            self.step_timer.resume()
+            self.dirt_timer.resume()
         self._refresh()
 
     def stop(self):
@@ -248,43 +330,27 @@ class VacuumApp:
     # ------------------------------------------------------------------
     # Zamanlayıcılar (birbirinden bağımsız)
     # ------------------------------------------------------------------
-    def _schedule_timers(self):
-        self._schedule_step()
-        self._schedule_dirt()
-
-    def _schedule_step(self):
-        self._step_job = self.root.after(self._read_step_ms(), self._on_step_timer)
-
-    def _schedule_dirt(self):
-        delay_ms = int(self._read_dirt_seconds() * 1000)
-        self._dirt_job = self.root.after(delay_ms, self._on_dirt_timer)
-
     def _on_step_timer(self):
-        self._step_job = None
         if self.simulation is None or not self.simulation.is_running:
             return
         record = self.simulation.step()
         self._last_action = record.action
         self._append_log(format_record(record))
         self._refresh()
-        self._schedule_step()
+        self.step_timer.start(self._read_step_ms())
 
     def _on_dirt_timer(self):
-        self._dirt_job = None
         if self.simulation is None or not self.simulation.is_running:
             return
         record = self.simulation.dirty_tick()
         if record is not None:
             self._append_log(format_record(record), "dirt")
             self._refresh()
-        self._schedule_dirt()
+        self.dirt_timer.start(self._read_dirt_ms())
 
     def _cancel_timers(self):
-        for job in (self._step_job, self._dirt_job):
-            if job is not None:
-                self.root.after_cancel(job)
-        self._step_job = None
-        self._dirt_job = None
+        self.step_timer.cancel()
+        self.dirt_timer.cancel()
 
     def _read_step_ms(self):
         """Ayar alanını okur; geçersizse son geçerli değeri kullanır."""
@@ -302,6 +368,9 @@ class VacuumApp:
             return self._dirt_seconds
         self._dirt_seconds = max(MIN_DIRT_SECONDS, min(MAX_DIRT_SECONDS, value))
         return self._dirt_seconds
+
+    def _read_dirt_ms(self):
+        return round(self._read_dirt_seconds() * 1000)
 
     # ------------------------------------------------------------------
     # Günlük

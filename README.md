@@ -33,7 +33,7 @@ ortamda bu testler otomatik olarak atlanır.
 | Kontrol | İşlev |
 |---|---|
 | **Başlat** | Yeni bir simülasyon başlatır. Önceki durum ve günlük sıfırlanır. |
-| **Duraklat / Devam** (Boşluk) | Simülasyonu durumunu koruyarak askıya alır ya da kaldığı yerden sürdürür. |
+| **Duraklat / Devam** (Boşluk) | Simülasyonu durumunu koruyarak askıya alır ya da kaldığı yerden sürdürür. Adım ve kirlenme zamanlayıcıları kalan sürelerini korur; devam edildiğinde tam aralıktan değil, kalan süreden devam ederler. |
 | **Durdur** (Esc) | Simülasyonu sonlandırır. Günlük ekranda kalır. |
 | Adım aralığı (ms) | Ajanın iki adımı arasındaki süre. Varsayılan 700 ms. |
 | Kirlenme aralığı (sn) | Kirlenme zamanlayıcısının tetiklenme aralığı. Varsayılan 3 sn. |

@@ -9,7 +9,7 @@ from tkinter import ttk
 import unittest
 
 from environment import Action, Status
-from gui import VacuumApp, format_elapsed, format_record, parse_seed
+from gui import PausableTimer, VacuumApp, format_elapsed, format_record, parse_seed
 from simulation import DirtRecord, SimulationState, StepRecord
 
 
@@ -35,6 +35,132 @@ class FormatTests(unittest.TestCase):
         self.assertEqual(parse_seed(" 42 "), 42)
         with self.assertRaises(ValueError):
             parse_seed("abc")
+
+
+class FakeScheduler:
+    """Tkinter'ın after/after_cancel arayüzünü sahte bir saatle taklit eder."""
+
+    def __init__(self):
+        self.now = 0.0
+        self._jobs = {}
+        self._next_id = 0
+
+    def clock(self):
+        return self.now
+
+    def after(self, delay_ms, callback):
+        self._next_id += 1
+        self._jobs[self._next_id] = (self.now + delay_ms / 1000, callback)
+        return self._next_id
+
+    def after_cancel(self, job_id):
+        self._jobs.pop(job_id, None)
+
+    def advance(self, seconds):
+        """Saati ilerletir ve süresi dolan işleri sırayla çalıştırır."""
+        target = self.now + seconds
+        while True:
+            due = [(t, i) for i, (t, _) in self._jobs.items() if t <= target]
+            if not due:
+                break
+            t, job_id = min(due)
+            self.now = t
+            _, callback = self._jobs.pop(job_id)
+            callback()
+        self.now = target
+
+
+class PausableTimerTests(unittest.TestCase):
+    def setUp(self):
+        self.scheduler = FakeScheduler()
+        self.fired = []
+        self.timer = PausableTimer(
+            self.scheduler, lambda: self.fired.append(self.scheduler.now), clock=self.scheduler.clock,
+        )
+
+    def test_fires_after_full_interval(self):
+        self.timer.start(1000)
+        self.scheduler.advance(0.999)
+        self.assertEqual(self.fired, [])
+        self.scheduler.advance(0.001)
+        self.assertEqual(self.fired, [1.0])
+        self.assertFalse(self.timer.is_pending)
+
+    def test_pause_keeps_remaining_time(self):
+        self.timer.start(1000)
+        self.scheduler.advance(0.3)
+        self.timer.pause()
+        self.assertTrue(self.timer.is_paused)
+        self.assertFalse(self.timer.is_pending)
+        self.assertAlmostEqual(self.timer.remaining_ms, 700)
+
+    def test_no_fire_while_paused(self):
+        self.timer.start(1000)
+        self.scheduler.advance(0.3)
+        self.timer.pause()
+        self.scheduler.advance(60)
+        self.assertEqual(self.fired, [])
+
+    def test_resume_continues_from_remaining_time(self):
+        self.timer.start(1000)
+        self.scheduler.advance(0.3)
+        self.timer.pause()
+        self.scheduler.advance(5)            # duraklama: t = 5.3
+        self.timer.resume()
+        self.scheduler.advance(0.699)
+        self.assertEqual(self.fired, [], "Tam aralık değil, kalan 700 ms beklenmeli")
+        self.scheduler.advance(0.001)
+        self.assertEqual(self.fired, [6.0])  # 5.3 + 0.7
+
+    def test_multiple_pauses_accumulate_correctly(self):
+        self.timer.start(1000)
+        for _ in range(4):                   # 4 x 0.2 sn çalış, her seferinde 10 sn duraklat
+            self.scheduler.advance(0.2)
+            self.timer.pause()
+            self.scheduler.advance(10)
+            self.timer.resume()
+        self.assertEqual(self.fired, [])
+        self.assertAlmostEqual(self.timer.remaining_ms, 200)
+        self.scheduler.advance(0.2)
+        self.assertEqual(len(self.fired), 1)
+
+    def test_cancel_discards_pending_and_paused(self):
+        self.timer.start(1000)
+        self.timer.cancel()
+        self.scheduler.advance(5)
+        self.assertEqual(self.fired, [])
+
+        self.timer.start(1000)
+        self.scheduler.advance(0.5)
+        self.timer.pause()
+        self.timer.cancel()
+        self.timer.resume()                  # iptal sonrası devam hiçbir şey yapmamalı
+        self.scheduler.advance(5)
+        self.assertEqual(self.fired, [])
+        self.assertIsNone(self.timer.remaining_ms)
+
+    def test_start_resets_to_full_interval(self):
+        self.timer.start(1000)
+        self.scheduler.advance(0.6)
+        self.timer.pause()
+        self.timer.start(1000)               # yeni başlatma kalan süreyi unutur
+        self.assertFalse(self.timer.is_paused)
+        self.assertAlmostEqual(self.timer.remaining_ms, 1000)
+
+    def test_two_timers_are_independent(self):
+        other_fired = []
+        other = PausableTimer(self.scheduler, lambda: other_fired.append(self.scheduler.now),
+                              clock=self.scheduler.clock)
+        self.timer.start(700)
+        other.start(3000)
+        self.scheduler.advance(0.5)
+        self.timer.pause()
+        other.pause()
+        self.scheduler.advance(2)
+        self.timer.resume()
+        other.resume()
+        self.assertAlmostEqual(self.timer.remaining_ms, 200)
+        self.assertAlmostEqual(other.remaining_ms, 2500)
 
 
 class WindowTests(unittest.TestCase):
@@ -78,8 +204,8 @@ class WindowTests(unittest.TestCase):
         app.toggle_pause()
         self.assertIs(app.simulation.state, SimulationState.PAUSED)
         self.assertEqual(app.pause_button["text"], "Devam")
-        self.assertIsNone(app._step_job)
-        self.assertIsNone(app._dirt_job)
+        self.assertFalse(app.step_timer.is_pending)
+        self.assertFalse(app.dirt_timer.is_pending)
         self.pump(0.5)
         self.assertEqual(app.simulation.step_count, steps)
 
@@ -103,6 +229,59 @@ class WindowTests(unittest.TestCase):
         self.assertEqual(app.simulation.step_count, 0)
         self.assertEqual(len(self.log_lines()), 1)
         self.assertIn("başladı", self.log_lines()[0])
+
+    def test_pause_resume_keeps_remaining_time_in_window(self):
+        app = self.app
+        app.step_var.set("1000")
+        app.dirt_var.set("2")
+        app.start()
+        self.pump(0.4)
+        app.toggle_pause()
+        step_left = app.step_timer.remaining_ms
+        dirt_left = app.dirt_timer.remaining_ms
+        self.assertLess(step_left, 900)
+        self.assertLess(dirt_left, 1900)
+        log_before = self.log_lines()
+
+        # Duraklama, adım aralığından uzun sürse bile hiçbir şey olmamalı.
+        self.pump(1.5)
+        self.assertEqual(app.simulation.step_count, 0)
+        self.assertEqual(self.log_lines(), log_before)
+        self.assertAlmostEqual(app.step_timer.remaining_ms, step_left)
+        self.assertAlmostEqual(app.dirt_timer.remaining_ms, dirt_left)
+
+        # Devam: ilk adım tam 1000 ms değil, kalan süre sonunda gelmeli.
+        app.toggle_pause()
+        self.assertLessEqual(app.step_timer.remaining_ms, step_left + 1)
+        self.pump(step_left / 1000 + 0.25)
+        self.assertEqual(app.simulation.step_count, 1)
+
+    def test_stop_cancels_pending_timers(self):
+        app = self.app
+        app.start()
+        app.stop()
+        self.assertFalse(app.step_timer.is_pending)
+        self.assertFalse(app.dirt_timer.is_pending)
+
+        app.start()
+        app.toggle_pause()
+        app.stop()                           # duraklatılmışken durdurma
+        self.assertFalse(app.step_timer.is_paused)
+        self.assertFalse(app.dirt_timer.is_paused)
+        app.toggle_pause()                   # durdurulmuş simülasyonda etkisiz
+        self.assertFalse(app.step_timer.is_pending)
+
+    def test_new_simulation_starts_timers_at_full_interval(self):
+        app = self.app
+        app.step_var.set("1000")
+        app.dirt_var.set("3")
+        app.start()
+        self.pump(0.5)
+        app.toggle_pause()
+        app.stop()
+        app.start()
+        self.assertGreater(app.step_timer.remaining_ms, 950)
+        self.assertGreater(app.dirt_timer.remaining_ms, 2950)
 
     def test_dirt_timer_runs_independently(self):
         app = self.app
