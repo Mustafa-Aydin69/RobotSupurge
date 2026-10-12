@@ -50,8 +50,9 @@ class Simulation:
     """Ortamı, ajanı ve günlüğü bir arada yöneten simülasyon.
 
     ``seed`` verilirse ortamın başlangıcı ve kirlenmeler her seferinde aynı
-    şekilde üretilir. ``location`` ve ``statuses`` verilirse başlangıç durumu
-    rastgele seçilmez. ``clock`` testlerde sahte bir saat vermek içindir.
+    şekilde üretilir. ``rows`` ve ``cols`` grid boyutudur (varsayılan 1×2).
+    ``location`` ve ``statuses`` verilirse başlangıç durumu rastgele seçilmez.
+    ``clock`` testlerde sahte bir saat vermek içindir.
     """
 
     def __init__(
@@ -61,16 +62,25 @@ class Simulation:
         location=None,
         statuses=None,
         clock=time.monotonic,
+        rows=1,
+        cols=2,
     ):
         self.seed = seed
         master_rng = random.Random(seed)
+        # Ortamın üreteci ilk olarak türetilir; böylece 1×2'de aynı seed,
+        # Faz 1 ile birebir aynı başlangıcı ve kirlenme dizisini üretir.
         self.environment = Environment(
             rng=random.Random(master_rng.getrandbits(64)),
             dirt_probability=dirt_probability,
             location=location,
             statuses=statuses,
+            rows=rows,
+            cols=cols,
         )
-        self.agent = ReflexAgent()
+        self.agent = ReflexAgent(
+            grid=self.environment.grid,
+            rng=random.Random(master_rng.getrandbits(64)),
+        )
 
         self.state = SimulationState.READY
         self.log = []

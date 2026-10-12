@@ -236,5 +236,54 @@ class SeedTests(unittest.TestCase):
         self.assertGreater(len(runs), 1)
 
 
+class GridSimulationTests(unittest.TestCase):
+    def test_default_is_1x2(self):
+        sim = Simulation(seed=0)
+        self.assertEqual(sim.environment.rooms, ("A", "B"))
+        self.assertIs(sim.agent.grid, sim.environment.grid)
+
+    def test_grid_simulation_runs_within_bounds(self):
+        for rows, cols in [(1, 3), (2, 1), (3, 4), (6, 6)]:
+            sim = Simulation(seed=rows * cols, rows=rows, cols=cols, clock=FakeClock())
+            sim.start()
+            rooms = set(sim.environment.rooms)
+            for i in range(500):
+                before = sim.environment.location
+                record = sim.step()
+                self.assertEqual(record.room, before)
+                self.assertIn(sim.environment.location, rooms)
+                if record.action is Action.CLEAN:
+                    self.assertEqual(sim.environment.location, before)  # tek eylem
+                else:
+                    self.assertNotEqual(sim.environment.location, before)
+                if i % 4 == 0:
+                    sim.dirty_tick()
+            self.assertEqual(sim.step_count, 500)
+            self.assertEqual(sim.clean_count + sim.move_count, 500)
+
+    def test_grid_simulation_is_reproducible_with_seed(self):
+        def run(seed):
+            sim = Simulation(seed=seed, rows=4, cols=5, clock=FakeClock())
+            initial = (sim.environment.location, sim.environment.statuses())
+            sim.start()
+            for i in range(300):
+                sim.step()
+                if i % 3 == 0:
+                    sim.dirty_tick()
+            return initial, sim.log
+        self.assertEqual(run(11), run(11))
+        self.assertNotEqual(run(11), run(12))
+
+    def test_grid_agent_visits_many_rooms(self):
+        sim = Simulation(seed=4, rows=3, cols=3, dirt_probability=0.0, clock=FakeClock())
+        sim.start()
+        visited = {sim.step().room for _ in range(400)}
+        self.assertEqual(visited, set(sim.environment.rooms))
+
+    def test_invalid_grid_is_rejected(self):
+        with self.assertRaises(ValueError):
+            Simulation(rows=1, cols=1)
+
+
 if __name__ == "__main__":
     unittest.main()
