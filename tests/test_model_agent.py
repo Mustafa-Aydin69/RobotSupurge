@@ -3,6 +3,7 @@
 import copy
 import random
 import unittest
+from pathlib import Path
 
 from agents import SOURCE_INFERENCE, SOURCE_PERCEPT, ModelBasedAgent, Observation
 from environment import Action, Grid, Status
@@ -401,7 +402,7 @@ class KnowledgeFreshnessTests(unittest.TestCase):
     def test_agent_does_not_depend_on_gui_or_stale_threshold(self):
         import agents
 
-        source = open(agents.__file__, encoding="utf-8").read()
+        source = Path(agents.__file__).read_text(encoding="utf-8")
         self.assertNotIn("import gui", source)
         self.assertNotIn("stale", source.lower())
         self.assertFalse(any("stale" in name or "threshold" in name for name in dir(ModelBasedAgent)))

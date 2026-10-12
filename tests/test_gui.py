@@ -131,20 +131,31 @@ class DpiTests(unittest.TestCase):
         self.assertEqual(_font(7), ("Segoe UI", -9))
 
     def test_window_sizes_scale_with_emulated_150_percent(self):
-        try:
-            root = tk.Tk()
-        except tk.TclError as exc:
-            self.skipTest(f"Ekran bulunamadı: {exc}")
-        try:
-            root.withdraw()
-            root.tk.call("tk", "scaling", 2.0)            # 144 DPI = %150 benzetimi
-            app = VacuumApp(root)
-            self.assertAlmostEqual(app.scale, 1.5, places=1)
-            min_w, min_h = root.minsize()
-            self.assertGreaterEqual(min_w, 1000)          # 680 * 1.5
-            self.assertGreaterEqual(min_h, min(900, int(root.winfo_screenheight() * 0.9)))
-        finally:
-            root.destroy()
+        """%150 benzetimi ayrı bir süreçte yapılır: tk scaling ayarı diğer testlere sızmasın."""
+        import json
+        import subprocess
+        import sys
+        from pathlib import Path
+
+        script = "\n".join([
+            "import json, tkinter as tk, gui",
+            "root = tk.Tk(); root.withdraw()",
+            "root.tk.call('tk', 'scaling', 2.0)",
+            "app = gui.VacuumApp(root)",
+            "print(json.dumps({'scale': app.scale, 'minsize': root.minsize(),"
+            " 'screen_h': root.winfo_screenheight()}))",
+            "root.destroy()",
+        ])
+        result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True,
+                                cwd=Path(__file__).resolve().parent.parent, timeout=60)
+        if result.returncode != 0 and "TclError" in result.stderr:
+            self.skipTest("Ekran bulunamadı")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        data = json.loads(result.stdout.strip().splitlines()[-1])
+        self.assertAlmostEqual(data["scale"], 1.5, places=1)
+        min_w, min_h = data["minsize"]
+        self.assertGreaterEqual(min_w, 1000)                       # 680 * 1.5
+        self.assertGreaterEqual(min_h, min(900, int(data["screen_h"] * 0.9)))
 
 
 class FakeScheduler:
