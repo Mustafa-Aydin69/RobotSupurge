@@ -12,6 +12,7 @@ Bu modül grafik arayüzden tamamen bağımsızdır.
 """
 
 import random
+from collections import deque
 from dataclasses import dataclass
 from types import MappingProxyType
 
@@ -233,6 +234,65 @@ class ModelBasedAgent:
         if observation is None:
             return (1, 0)
         return (0, self._step - observation.step)
+
+
+# ----------------------------------------------------------------------
+# Rota planlama (BFS)
+# ----------------------------------------------------------------------
+# Komşular her zaman Grid.valid_moves sırasıyla gezilir: Sol, Sağ, Yukarı,
+# Aşağı. Aynı uzunlukta birden fazla en kısa rota varsa bu sıra hangisinin
+# seçileceğini belirler; sonuç her zaman aynıdır.
+
+def bfs_distances(grid, start):
+    """``start`` odasından her odaya en kısa hareket sayısı."""
+    grid.position_of(start)  # geçersiz oda adı reddedilir
+    distances = {start: 0}
+    queue = deque([start])
+    while queue:
+        room = queue.popleft()
+        for move in grid.valid_moves(room):
+            neighbor = grid.neighbor(room, move)
+            if neighbor not in distances:
+                distances[neighbor] = distances[room] + 1
+                queue.append(neighbor)
+    return distances
+
+
+def shortest_path(grid, start, goal):
+    """``start`` odasından ``goal`` odasına en kısa hareket dizisi (tuple).
+
+    Saf ve deterministiktir; yalnızca grid bilgisini kullanır. Başlangıç ve
+    hedef aynıysa boş rota döner. Bütün hareketler grid sınırları içindedir.
+    """
+    grid.position_of(goal)  # geçersiz oda adı reddedilir
+    parents = {start: None}
+    queue = deque([start])
+    grid.position_of(start)
+    while queue:
+        room = queue.popleft()
+        if room == goal:
+            break
+        for move in grid.valid_moves(room):
+            neighbor = grid.neighbor(room, move)
+            if neighbor not in parents:
+                parents[neighbor] = (room, move)
+                queue.append(neighbor)
+    route = []
+    room = goal
+    while parents[room] is not None:
+        room, move = parents[room]
+        route.append(move)
+    return tuple(reversed(route))
+
+
+def route_rooms(grid, start, route):
+    """Rotanın uğradığı odalar (başlangıç hariç); geçersiz rotada ValueError."""
+    rooms = []
+    room = start
+    for move in route:
+        room = grid.neighbor(room, move)
+        rooms.append(room)
+    return tuple(rooms)
 
 
 # Simülasyon ve arayüzün kullandığı ajan türleri (anahtar -> sınıf).
