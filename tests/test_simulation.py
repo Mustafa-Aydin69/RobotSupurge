@@ -342,7 +342,7 @@ class AgentTypeTests(unittest.TestCase):
 
     def test_unknown_agent_type_is_rejected(self):
         with self.assertRaises(ValueError):
-            Simulation(agent_type="goal")
+            Simulation(agent_type="bilinmeyen")
 
     def test_same_seed_gives_same_environment_for_both_agent_types(self):
         a = Simulation(seed=21, rows=4, cols=4, agent_type="reflex")

@@ -286,5 +286,114 @@ class RouteFollowingTests(unittest.TestCase):
                     previous = agent.plan_snapshot()
 
 
+def run_goal_sim(seed, rows=4, cols=5, steps=300, read_snapshots=False, dirt_every=3):
+    from simulation import Simulation
+
+    sim = Simulation(seed=seed, rows=rows, cols=cols, agent_type="goal", clock=lambda: 0.0)
+    sim.start()
+    for i in range(steps):
+        sim.step()
+        if read_snapshots:
+            sim.agent.model_snapshot()
+            sim.agent.plan_snapshot()
+        if i % dirt_every == 0:
+            sim.dirty_tick()
+    return sim
+
+
+class GoalSimulationTests(unittest.TestCase):
+    def test_goal_agent_is_registered(self):
+        from simulation import Simulation
+
+        sim = Simulation(seed=0, rows=3, cols=3, agent_type="goal")
+        self.assertIsInstance(sim.agent, GoalBasedAgent)
+        self.assertIs(sim.agent.grid, sim.environment.grid)
+
+    def test_seed_reproducibility(self):
+        self.assertEqual(run_goal_sim(8).log, run_goal_sim(8).log)
+        self.assertNotEqual(run_goal_sim(8).log, run_goal_sim(9).log)
+
+    def test_reading_snapshots_does_not_change_behavior(self):
+        self.assertEqual(run_goal_sim(5).log, run_goal_sim(5, read_snapshots=True).log)
+
+    def test_no_environment_leak_targets_come_from_model(self):
+        """Bilinmeyen hedef her zaman modelde olmayan bir odadır; model yalnızca algılanan odaları içerir."""
+        from simulation import Simulation, StepRecord
+
+        sim = Simulation(seed=3, rows=6, cols=6, agent_type="goal", dirt_probability=1.0, clock=lambda: 0.0)
+        sim.start()
+        for i in range(60):
+            sim.step()
+            sim.dirty_tick()
+            model = sim.agent.model_snapshot()
+            plan = sim.agent.plan_snapshot()
+            perceived = {r.room for r in sim.log if isinstance(r, StepRecord)}
+            self.assertEqual(set(model.observations), perceived)
+            if plan.target is not None and plan.target.kind == GOAL_UNKNOWN:
+                self.assertNotIn(plan.target.room, model.observations)
+            # Ortamdaki kirli odalar modelde "kirli" olarak görünmez (ajan uzağı göremez).
+            self.assertFalse(any(
+                obs.status is DIRTY for room, obs in model.observations.items()
+                if room != sim.environment.location
+            ))
+
+    def test_long_runs_stay_in_bounds_with_valid_plans(self):
+        """35 grid boyutunda kirlenmeli 2000 adım: sınır ihlali yok, plan her zaman geçerli."""
+        from simulation import Simulation
+
+        for rows, cols in ALL_GRID_SIZES:
+            sim = Simulation(seed=rows * 11 + cols, rows=rows, cols=cols, agent_type="goal", clock=lambda: 0.0)
+            sim.start()
+            rooms = set(sim.environment.rooms)
+            for i in range(2000):
+                sim.step()  # sınır dışı hareket ValueError fırlatırdı
+                plan = sim.agent.plan_snapshot()
+                if plan.target is not None:
+                    self.assertIn(plan.target.room, rooms)
+                    if plan.route:
+                        self.assertEqual(plan.origin, sim.environment.location)
+                        self.assertEqual(route_rooms(sim.environment.grid, plan.origin, plan.route)[-1],
+                                         plan.target.room)
+                if i % 4 == 0:
+                    sim.dirty_tick()
+            with self.subTest(grid=(rows, cols)):
+                self.assertEqual(sim.step_count, 2000)
+
+    def test_target_changes_only_on_arrival_in_simulation(self):
+        """Kirlenme altında da hedef yalnızca hedefe varınca (ya da ilk kez) seçilir."""
+        from simulation import Simulation
+
+        sim = Simulation(seed=12, rows=5, cols=5, agent_type="goal", clock=lambda: 0.0)
+        sim.start()
+        previous = sim.agent.plan_snapshot()
+        changes = 0
+        for i in range(1500):
+            room = sim.environment.location
+            sim.step()
+            plan = sim.agent.plan_snapshot()
+            if plan.version != previous.version:
+                changes += 1
+                self.assertIn(plan.reason, {REPLAN_FIRST, REPLAN_REACHED})
+                if plan.reason == REPLAN_REACHED:
+                    self.assertEqual(room, previous.target.room)
+            previous = plan
+            if i % 4 == 0:
+                sim.dirty_tick()
+        self.assertGreater(changes, 10)
+
+    def test_all_rooms_visited_in_dirt_free_runs(self):
+        """Ölçüm: kirlenme kapalıyken bu boyut ve seed'lerde her oda ziyaret edildi (garanti değil)."""
+        from simulation import Simulation
+
+        for rows, cols in [(1, 6), (3, 3), (4, 4), (6, 6)]:
+            for seed in range(10):
+                sim = Simulation(seed=seed, rows=rows, cols=cols, agent_type="goal",
+                                 dirt_probability=0.0, clock=lambda: 0.0)
+                sim.start()
+                visited = {sim.step().room for _ in range(50 * rows * cols)}
+                with self.subTest(grid=(rows, cols), seed=seed):
+                    self.assertEqual(visited, set(sim.environment.rooms))
+
+
 if __name__ == "__main__":
     unittest.main()

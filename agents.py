@@ -511,5 +511,6 @@ class GoalBasedAgent(ModelBasedAgent):
 AGENT_TYPES = {
     "reflex": ReflexAgent,
     "model": ModelBasedAgent,
+    "goal": GoalBasedAgent,
 }
 DEFAULT_AGENT_TYPE = "reflex"
