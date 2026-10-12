@@ -611,6 +611,48 @@ class WindowTests(unittest.TestCase):
         self.root.update()
         self.assertGreater(app.env_frame.winfo_width(), board_width * 0.95)
 
+    def test_stale_threshold_does_not_change_agent_decisions(self):
+        """Görsel eskime eşiği yalnızca çizimi etkiler, ajanın kararlarını değil."""
+        def run(threshold):
+            with mock.patch("gui.stale_threshold", return_value=threshold):
+                app = self.app
+                app.agent_var.set("Model Tabanlı Ajan")
+                app.rows_var.set("4")
+                app.cols_var.set("4")
+                app.seed_var.set("13")
+                app.start()
+                app.step_timer.cancel()
+                app.dirt_timer.cancel()
+                for i in range(150):
+                    app.simulation.step()
+                    if i % 4 == 0:
+                        app.simulation.dirty_tick()
+                    app._draw()
+                # Gerçek saate bağlı zaman damgaları karşılaştırmaya alınmaz.
+                log = [r.rooms if isinstance(r, DirtRecord) else (r.step, r.room, r.status, r.action)
+                       for r in app.simulation.log]
+                categories = self.model_categories()
+                app.stop()
+                return log, categories
+
+        log_low, cats_low = run(1)
+        log_high, cats_high = run(10 ** 6)
+        self.assertEqual(log_low, log_high)
+        self.assertIn(MODEL_STALE, cats_low.values())
+        self.assertNotIn(MODEL_STALE, cats_high.values())
+
+    def test_age_is_not_presented_as_time_or_probability(self):
+        app = self.app
+        app.agent_var.set("Model Tabanlı Ajan")
+        self.root.update()
+        legend = app.model_legend_var.get()
+        self.assertIn("ajan adımı", legend)
+        self.assertIn("gerçek süre değildir", legend)
+        self.assertNotIn("olasılık", legend)
+        texts = [app.model_canvas.itemcget(i, "text") for i in app.model_canvas.find_all()
+                 if app.model_canvas.type(i) == "text"]
+        self.assertFalse(any(t.endswith(("sn", "s", "%")) for t in texts if t.startswith("yaş")))
+
     def test_invalid_interval_falls_back_to_last_valid(self):
         self.app.step_var.set("abc")
         self.assertEqual(self.app._read_step_ms(), 700)

@@ -323,5 +323,89 @@ class DifferenceFromReflexTests(unittest.TestCase):
                 sim.dirty_tick()
 
 
+class KnowledgeFreshnessTests(unittest.TestCase):
+    """Otomatik kirlenme altında iç modelin güncelliği (simülasyon düzeyinde)."""
+
+    def make_sim(self, seed=1, rows=3, cols=3):
+        from simulation import Simulation
+
+        sim = Simulation(seed=seed, rows=rows, cols=cols, agent_type="model",
+                         dirt_probability=1.0, clock=lambda: 0.0)
+        sim.start()
+        return sim
+
+    def test_remote_redirtying_is_not_learned(self):
+        sim = self.make_sim()
+        for _ in range(12):
+            sim.step()
+        before = sim.agent.model_snapshot()
+        sim.dirty_tick()  # olasılık 1: bütün temiz odalar kirlenir
+        after = sim.agent.model_snapshot()
+        self.assertEqual(dict(after.observations), dict(before.observations))
+        self.assertEqual((after.step, after.location), (before.step, before.location))
+
+    def test_old_clean_belief_is_not_synchronized_with_reality(self):
+        sim = self.make_sim()
+        for _ in range(12):
+            sim.step()
+        sim.dirty_tick()
+        snapshot = sim.agent.model_snapshot()
+        believed_clean_but_dirty = {
+            room for room, obs in snapshot.observations.items()
+            if obs.status is CLEAN and sim.environment.status_of(room) is DIRTY
+        }
+        # Model gerçeği kendiliğinden öğrenmez: eski "temiz" bilgisi kalır.
+        self.assertTrue(believed_clean_but_dirty)
+
+    def test_revisit_corrects_old_knowledge(self):
+        sim = self.make_sim()
+        for _ in range(12):
+            sim.step()
+        sim.dirty_tick()
+        snapshot = sim.agent.model_snapshot()
+        outdated = {
+            room for room, obs in snapshot.observations.items()
+            if obs.status is CLEAN and sim.environment.status_of(room) is DIRTY
+            and room != sim.environment.location
+        }
+        corrected = None
+        for _ in range(200):
+            record = sim.step()
+            if record.room in outdated:
+                corrected = record
+                break
+        self.assertIsNotNone(corrected, "Eski bilgili odalardan biri yeniden ziyaret edilmeli")
+        self.assertIs(corrected.status, DIRTY)          # güncel algı eski "temiz" bilgisini ezdi
+        self.assertIs(corrected.action, Action.CLEAN)
+        obs = sim.agent.model_snapshot().observations[corrected.room]
+        self.assertEqual((obs.status, obs.source), (CLEAN, SOURCE_INFERENCE))
+
+    def test_failed_action_in_simulation_leaves_no_wrong_inference(self):
+        sim = self.make_sim()
+        sim.step()
+        location = sim.environment.location
+        steps_before = sim.step_count
+
+        def failing_execute(action):
+            raise ValueError("test: ortam eylemi reddetti")
+
+        sim.environment.execute = failing_execute
+        with self.assertRaises(ValueError):
+            sim.step()
+        snapshot = sim.agent.model_snapshot()
+        obs = snapshot.observations[location]
+        self.assertEqual(obs.source, SOURCE_PERCEPT, "Başarısız eylemden çıkarım yapılmamalı")
+        self.assertEqual(snapshot.location, location, "Başarısız harekette konum değişmemeli")
+        self.assertEqual(sim.step_count, steps_before)
+
+    def test_agent_does_not_depend_on_gui_or_stale_threshold(self):
+        import agents
+
+        source = open(agents.__file__, encoding="utf-8").read()
+        self.assertNotIn("import gui", source)
+        self.assertNotIn("stale", source.lower())
+        self.assertFalse(any("stale" in name or "threshold" in name for name in dir(ModelBasedAgent)))
+
+
 if __name__ == "__main__":
     unittest.main()

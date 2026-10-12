@@ -124,13 +124,16 @@ class ModelBasedAgent:
     bilginin ait olduğu adım ve bilginin kaynağı. Hiç algılanmamış odalar
     modelde yer almaz, yani bilinmiyor kabul edilir.
 
-    Ajan ortamın tamamını göremez. Model yalnızca iki yoldan güncellenir:
+    Ajan ortamın tamamını göremez. Model yalnızca şu yollarla güncellenir:
 
     * ``act`` içinde güncel algı modele yazılır (güncel algı her zaman eski
       bilginin önüne geçer),
     * ``action_result`` ile başarılı olduğu bildirilen Temizle eyleminden sonra
       oda "temiz (çıkarım)" olarak kaydedilir. Bir sonraki algı bu çıkarımı
-      doğrular ya da düzeltir.
+      doğrular ya da düzeltir,
+    * ``action_result`` ile başarılı olduğu bildirilen hareketten sonra
+      yalnızca ajanın kendi konum bilgisi güncellenir; hedef odanın durumu
+      bilinmiyorsa bilinmiyor olarak kalır.
 
     Gözlem yaşı ajanın kendi adım sayısıyla ölçülür; gerçek süre ya da kesin
     bir kirlenme olasılığı değildir.
