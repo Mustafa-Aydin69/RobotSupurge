@@ -670,6 +670,85 @@ class WindowTests(unittest.TestCase):
                  if app.model_canvas.type(i) == "text"]
         self.assertFalse(any(t.endswith(("sn", "s", "%")) for t in texts if t.startswith("yaş")))
 
+    def start_goal(self, rows=3, cols=4, seed="8"):
+        app = self.app
+        app.agent_var.set("Amaç Tabanlı Ajan")
+        app.rows_var.set(str(rows))
+        app.cols_var.set(str(cols))
+        app.seed_var.set(seed)
+        app.step_var.set("100")
+        app.start()
+        return app
+
+    def test_goal_target_and_route_are_drawn(self):
+        app = self.start_goal()
+        self.pump(0.8)
+        app.toggle_pause()
+        app._draw()
+        plan = app.simulation.agent.plan_snapshot()
+        self.assertIsNotNone(plan.target)
+        self.assertEqual(len(app.model_canvas.find_withtag("plan-target")), 1)
+        self.assertEqual(len(app.model_canvas.find_withtag("plan-route")), 1 if plan.route else 0)
+        # Gerçek ortamda yalnızca hedef işareti var; rota çizilmez.
+        self.assertEqual(len(app.canvas.find_withtag("env-target")), 1)
+        self.assertEqual(len(app.canvas.find_withtag("plan-route")), 0)
+        self.assertIn(f"Hedef: {plan.target.room}", app.status_var.get())
+
+    def test_goal_change_lines_do_not_count_as_steps(self):
+        app = self.start_goal()
+        self.pump(1.5)
+        app.toggle_pause()
+        lines = self.log_lines()
+        step_lines = [line for line in lines if line.startswith("Adım")]
+        goal_lines = [line for line in lines if line.startswith("Hedef")]
+        self.assertTrue(goal_lines)
+        self.assertEqual(len(step_lines), app.simulation.step_count)
+        self.assertEqual(len([r for r in app.simulation.log if isinstance(r, StepRecord)]),
+                         app.simulation.step_count)
+        self.assertEqual(len(goal_lines), app.simulation.agent.plan_snapshot().version)
+
+    def test_drawing_does_not_change_plan(self):
+        app = self.start_goal()
+        self.pump(0.5)
+        app.toggle_pause()
+        before = app.simulation.agent.plan_snapshot()
+        for _ in range(3):
+            app._draw()
+            app._update_status()
+        self.assertEqual(app.simulation.agent.plan_snapshot(), before)
+        with self.assertRaises(AttributeError):
+            app._displayed_plan(app.simulation.environment).route = ()
+
+    def test_no_plan_drawing_for_reflex_and_model_agents(self):
+        app = self.app
+        for name in ("Basit Refleks Ajan", "Model Tabanlı Ajan"):
+            app.agent_var.set(name)
+            app.rows_var.set("3")
+            app.cols_var.set("3")
+            app.step_var.set("100")
+            app.start()
+            self.pump(0.5)
+            with self.subTest(agent=name):
+                self.assertFalse(any(line.startswith("Hedef") for line in self.log_lines()))
+                self.assertEqual(app.canvas.find_withtag("env-target"), ())
+                self.assertEqual(app.model_canvas.find_withtag("plan-target"), ())
+            app.stop()
+
+    def test_format_goal_change(self):
+        from agents import GOAL_EXPLORE, PlanSnapshot, Target
+        from fractions import Fraction
+        from gui import format_goal_change
+        plan = PlanSnapshot(Target("A1", GOAL_EXPLORE, 2, Fraction(12, 2)), "A3", (), (), 3, "hedefe ulaşıldı")
+        self.assertEqual(format_goal_change(plan),
+                         "Hedef     | A1 (keşif, 2 adım, puan 6.00) — hedefe ulaşıldı")
+
+    def test_model_title_readable_in_small_window(self):
+        app = self.start_goal(6, 6)
+        self.root.deiconify()
+        self.root.geometry("680x620")
+        self.root.update()
+        self.assertGreaterEqual(app.model_frame.winfo_width(), 290)
+
     def test_invalid_interval_falls_back_to_last_valid(self):
         self.app.step_var.set("abc")
         self.assertEqual(self.app._read_step_ms(), 700)

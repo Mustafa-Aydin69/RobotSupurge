@@ -14,7 +14,10 @@ import time
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from agents import AGENT_TYPES, DEFAULT_AGENT_TYPE, SOURCE_INFERENCE, ModelSnapshot
+from agents import (
+    AGENT_TYPES, DEFAULT_AGENT_TYPE, GOAL_DIRTY, GOAL_EXPLORE, GOAL_UNKNOWN, SOURCE_INFERENCE,
+    ModelSnapshot,
+)
 from types import MappingProxyType
 
 from environment import MAX_GRID_SIZE, MIN_GRID_SIZE, Action, Grid, Status
@@ -52,6 +55,14 @@ COLOR_DIRT_SPOT = "#7a5230"
 COLOR_ROBOT = "#2f3e4e"
 COLOR_ROBOT_RING = "#5fa8d3"
 COLOR_ACTIVE_BORDER = "#1d70b8"
+
+# Hedef ve rota rengi
+COLOR_GOAL = "#7b3fbf"
+GOAL_KIND_TEXT = {
+    GOAL_DIRTY: "bilinen kirli oda",
+    GOAL_UNKNOWN: "bilinmeyen oda",
+    GOAL_EXPLORE: "keşif",
+}
 
 # İç model paneli renkleri
 COLOR_MODEL_UNKNOWN = "#e2e2e2"
@@ -144,6 +155,23 @@ def compute_layout(width, height, rows, cols):
 def agent_has_model(agent_type):
     """Ajan türü bir iç model kopyası sunuyor mu? (Panel bu yeteneğe göre gösterilir.)"""
     return hasattr(AGENT_TYPES[agent_type], "model_snapshot")
+
+
+def agent_has_plan(agent_type):
+    """Ajan türü bir hedef/rota kopyası sunuyor mu?"""
+    return hasattr(AGENT_TYPES[agent_type], "plan_snapshot")
+
+
+def format_goal_change(plan):
+    """Hedef değişimini günlükte gösterilecek bilgi satırına çevirir.
+
+    Bu satır bir ajan adımı değildir; adım sayısını etkilemez.
+    """
+    target = plan.target
+    detail = f"{GOAL_KIND_TEXT[target.kind]}, {target.distance} adım"
+    if target.score is not None:
+        detail += f", puan {float(target.score):.2f}"
+    return f"Hedef     | {target.room} ({detail}) — {plan.reason}"
 
 
 def stale_threshold(grid):
@@ -259,6 +287,7 @@ class VacuumApp:
         self._step_ms = DEFAULT_STEP_MS
         self._dirt_seconds = DEFAULT_DIRT_SECONDS
         self._last_action = None
+        self._last_plan_version = 0
 
         root.title("Robot Süpürge Ajanı")
         root.geometry("820x800")
@@ -409,14 +438,15 @@ class VacuumApp:
             return
         self._board_layout = layout
         for index in range(2):
-            self.board.columnconfigure(index, weight=0)
+            self.board.columnconfigure(index, weight=0, minsize=0)
             self.board.rowconfigure(index, weight=0)
         if not model_visible:
             self.board.columnconfigure(0, weight=1)
             self.board.rowconfigure(0, weight=1)
         elif side_by_side:
             self.board.columnconfigure(0, weight=3)
-            self.board.columnconfigure(1, weight=2)
+            # Panel başlığı dar pencerede de tam okunabilsin.
+            self.board.columnconfigure(1, weight=2, minsize=300)
             self.board.rowconfigure(0, weight=1)
             self.model_frame.grid_configure(row=0, column=1, padx=(8, 0), pady=0)
         else:
@@ -448,6 +478,7 @@ class VacuumApp:
 
         self.log_text.tag_configure("dirt", foreground="#9a5b13")
         self.log_text.tag_configure("info", foreground="#1d70b8")
+        self.log_text.tag_configure("goal", foreground=COLOR_GOAL)
 
     # ------------------------------------------------------------------
     # Kullanıcı komutları
@@ -470,6 +501,7 @@ class VacuumApp:
             return
 
         self._cancel_timers()
+        self._last_plan_version = 0
         self.simulation = Simulation(seed=seed, rows=rows, cols=cols, agent_type=self.selected_agent_type())
         self._last_action = None
         self._clear_log()
@@ -560,8 +592,18 @@ class VacuumApp:
         record = self.simulation.step()
         self._last_action = record.action
         self._append_log(format_record(record))
+        self._log_goal_change()
         self._refresh()
         self.step_timer.start(self._read_step_ms())
+
+    def _log_goal_change(self):
+        """Hedef değiştiyse ayrı renkli bir bilgi satırı ekler (adım sayılmaz)."""
+        if not agent_has_plan(self.simulation.agent_type):
+            return
+        plan = self.simulation.agent.plan_snapshot()
+        if plan.version != self._last_plan_version and plan.target is not None:
+            self._append_log(format_goal_change(plan), "goal")
+        self._last_plan_version = plan.version
 
     def _on_dirt_timer(self):
         if self.simulation is None or not self.simulation.is_running:
@@ -644,6 +686,11 @@ class VacuumApp:
         known = ""
         if agent_has_model(sim.agent_type):
             known = f"Bilinen oda: {len(sim.agent.model_snapshot().observations)}/{len(env.rooms)}   |   "
+        if agent_has_plan(sim.agent_type):
+            plan = sim.agent.plan_snapshot()
+            if plan.target is not None:
+                remaining = f"kalan rota: {len(plan.route)} adım" if plan.route else "hedefe ulaşıldı"
+                known += f"Hedef: {plan.target.room} ({GOAL_KIND_TEXT[plan.target.kind]}), {remaining}   |   "
         self.status_var.set(
             f"Durum: {sim.state.value}   |   {AGENT_TYPE_TEXT[sim.agent_type]}   |   "
             f"Ortam: {env.grid.rows}×{env.grid.cols}   |   "
@@ -678,9 +725,16 @@ class VacuumApp:
             return self.simulation.agent.model_snapshot()
         return empty_snapshot()
 
+    def _displayed_plan(self, env):
+        """Hedef/rota çiziminin kaynağı: yalnızca ajanın salt okunur plan kopyası."""
+        if env is not None and self.simulation is not None and agent_has_plan(self.simulation.agent_type):
+            return self.simulation.agent.plan_snapshot()
+        return None
+
     def _draw(self):
         grid, env, agent_type = self._displayed()
-        self._draw_environment(grid, env)
+        plan = self._displayed_plan(env)
+        self._draw_environment(grid, env, plan)
         show_model = agent_has_model(agent_type)
         if show_model != (self.model_frame.winfo_manager() == "grid"):
             if show_model:
@@ -693,10 +747,10 @@ class VacuumApp:
                 self.model_note.pack(side="bottom", fill="x", before=self.model_legend)
             else:
                 self.model_note.pack_forget()
-            self._draw_model(grid, self._displayed_snapshot(env))
+            self._draw_model(grid, self._displayed_snapshot(env), plan)
 
-    def _draw_model(self, grid, snapshot):
-        """İç modeli çizer. Yalnızca ``snapshot`` kullanılır; ortam okunmaz."""
+    def _draw_model(self, grid, snapshot, plan=None):
+        """İç modeli çizer. Yalnızca ``snapshot`` ve ``plan`` kopyaları kullanılır; ortam okunmaz."""
         c = self.model_canvas
         c.delete("all")
         width = c.winfo_width() if c.winfo_width() > 1 else self.CANVAS_WIDTH // 2
@@ -746,7 +800,31 @@ class VacuumApp:
                 c.create_oval(right - 3 * r, top + r, right - r, top + 3 * r,
                               fill=COLOR_ACTIVE_BORDER, outline="", tags=("model-agent",))
 
-    def _draw_environment(self, grid, env):
+        if plan is not None and plan.target is not None:
+            self._draw_plan(grid, plan, left0, top0, cell_w, cell_h, gap)
+
+    def _draw_plan(self, grid, plan, left0, top0, cell_w, cell_h, gap):
+        """Model panelinde hedef odayı ve BFS rotasını çizer."""
+        c = self.model_canvas
+        size = min(cell_w, cell_h)
+
+        def center(room):
+            row, col = grid.position_of(room)
+            return (left0 + col * (cell_w + gap) + cell_w / 2, top0 + row * (cell_h + gap) + cell_h / 2)
+
+        row, col = grid.position_of(plan.target.room)
+        left, top = left0 + col * (cell_w + gap), top0 + row * (cell_h + gap)
+        inset = max(2.0, size * 0.06)
+        c.create_rectangle(left + inset, top + inset, left + cell_w - inset, top + cell_h - inset,
+                           outline=COLOR_GOAL, width=max(2, round(size / 25)), tags=("plan-target",))
+        if plan.route and plan.origin:
+            points = [center(plan.origin)] + [center(room) for room in plan.route_rooms]
+            c.create_line(*[v for point in points for v in point], fill=COLOR_GOAL,
+                          width=max(2, round(size / 30)), arrow="last",
+                          arrowshape=(max(6, size * 0.15), max(8, size * 0.18), max(3, size * 0.06)),
+                          tags=("plan-route",))
+
+    def _draw_environment(self, grid, env, plan=None):
         c = self.canvas
         c.delete("all")
         width = c.winfo_width() if c.winfo_width() > 1 else self.CANVAS_WIDTH
@@ -789,6 +867,13 @@ class VacuumApp:
             if size >= 60:
                 status_label = STATUS_TEXT[status] if status else "—"
                 c.create_text((left + right) / 2, bottom - max(8, size * 0.08), text=status_label, font=status_font)
+
+            if plan is not None and plan.target is not None and plan.target.room == room:
+                # Gerçek ortamda yalnızca ajanın hedefi işaretlenir (rota gösterilmez).
+                r = max(3.0, min(9.0, size * 0.08))
+                x, y = left + 2.2 * r, top + 2.2 * r
+                c.create_polygon(x, y - r, x + r, y, x, y + r, x - r, y, fill=COLOR_GOAL,
+                                 outline="", tags=("env-target",))
 
             if is_current:
                 # Küçük odalarda durum yazısı yok; robot oda adından uzaklaşır.
