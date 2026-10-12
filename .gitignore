@@ -26,3 +26,8 @@ Desktop.ini
 
 # Gizli bilgiler
 .env
+
+# Derleme ortamı ve PyInstaller dosyaları
+.venv-build/
+*.spec
+self_test_report.txt
