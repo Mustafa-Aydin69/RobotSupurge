@@ -316,6 +316,27 @@ class Target:
     score: object        # keşifte (yaş + d) / d, diğer türlerde None
 
 
+# Yeniden planlama gerekçeleri (arayüzde gösterilir)
+REPLAN_FIRST = "ilk hedef"
+REPLAN_REACHED = "hedefe ulaşıldı"
+REPLAN_INVALID = "hedef geçersiz"
+REPLAN_PRIORITY = "daha öncelikli hedef"
+REPLAN_FAILED = "başarısız hareket"
+REPLAN_INCONSISTENT = "rota tutarsız"
+
+
+@dataclass(frozen=True)
+class PlanSnapshot:
+    """Hedef ve rotanın salt okunur kopyası (arayüz ve testler için)."""
+
+    target: object       # Target ya da None
+    origin: str          # rotanın başladığı oda (ajanın bildiği konum)
+    route: tuple         # kalan hareketler
+    route_rooms: tuple   # kalan hareketlerin uğradığı odalar (başlangıç hariç)
+    version: int         # hedef her yeniden seçildiğinde artar
+    reason: str          # son yeniden seçimin gerekçesi
+
+
 class GoalBasedAgent(ModelBasedAgent):
     """Amaç tabanlı ajan (goal-based agent).
 
@@ -334,15 +355,108 @@ class GoalBasedAgent(ModelBasedAgent):
 
     Eşitlikte önce kısa mesafe, sonra seed'li rastgele seçim kullanılır.
     Ajanın bulunduğu oda hedef olarak seçilmez.
+
+    Hedefe bağlılık: hedef, aşağıdakilerden biri olana kadar korunur ve her
+    adımda gereksiz yere yeniden seçilmez:
+
+    * hedefe ulaşılması,
+    * hedefin geçersizleşmesi (ör. bilinmeyen hedefin artık biliniyor olması),
+    * daha yüksek öncelikli bir hedef türünün ortaya çıkması,
+    * başarısız hareket,
+    * rotanın ajanın bildiği konumdan hedefe ulaşmaması.
+
+    Yeni plan her zaman ajanın kendi bildiği konumdan çıkarılır. Rota
+    üzerindeki kirli oda önce temizlenir; temizlik rotayı değiştirmez.
     """
 
     name = "Amaç Tabanlı Ajan"
 
-    __slots__ = ("_target",)
+    __slots__ = ("_target", "_route", "_plan_version", "_plan_reason", "_replan_request")
 
     def __init__(self, grid=None, rng=None):
         super().__init__(grid=grid, rng=rng)
-        self._target = None
+        self._target = None          # Target
+        self._route = ()             # kalan hareketler
+        self._plan_version = 0
+        self._plan_reason = None
+        self._replan_request = None  # başarısız hareketten sonra bir sonraki adımda yeniden planla
+
+    # ------------------------------------------------------------------
+    # Eylem sonucu
+    # ------------------------------------------------------------------
+    def action_result(self, action, succeeded):
+        """Model güncellemesine ek olarak rotayı yönetir.
+
+        * Başarılı hareket: rota yalnızca doğrulanan bu hareket kadar ilerler.
+        * Başarısız hareket: rota ve hedef geçersiz kılınır; bir sonraki
+          adımda ajanın bildiği konumdan yeniden planlanır.
+        * Temizle: rota değişmez.
+        """
+        pending = self._pending
+        super().action_result(action, succeeded)
+        if pending is None or pending[1] is not action or action is Action.CLEAN:
+            return
+        if succeeded and self._route and self._route[0] is action:
+            self._route = self._route[1:]
+        elif not succeeded:
+            self._target = None
+            self._route = ()
+            self._replan_request = REPLAN_FAILED
+
+    def plan_snapshot(self):
+        """Hedef ve rotanın salt okunur kopyası."""
+        origin = self._location
+        try:
+            rooms = route_rooms(self._grid, origin, self._route) if origin else ()
+        except ValueError:
+            rooms = ()
+        return PlanSnapshot(self._target, origin, tuple(self._route), rooms,
+                            self._plan_version, self._plan_reason)
+
+    # ------------------------------------------------------------------
+    # Yeniden planlama kararı
+    # ------------------------------------------------------------------
+    def replan_reason(self, location):
+        """Hedefin yeniden seçilmesi gerekiyorsa gerekçesini, yoksa None döndürür."""
+        if self._replan_request is not None:
+            return self._replan_request
+        target = self._target
+        if target is None:
+            return REPLAN_FIRST
+        if location == target.room:
+            return REPLAN_REACHED
+        if not self._target_still_valid(target):
+            return REPLAN_INVALID
+        if GOAL_PRIORITY[self._best_available_kind(location)] > GOAL_PRIORITY[target.kind]:
+            return REPLAN_PRIORITY
+        if not self._route_reaches_target(location):
+            return REPLAN_INCONSISTENT
+        return None
+
+    def _target_still_valid(self, target):
+        observation = self._memory.get(target.room)
+        if target.kind == GOAL_DIRTY:
+            return observation is not None and observation.status is Status.DIRTY
+        if target.kind == GOAL_UNKNOWN:
+            return observation is None
+        return observation is not None
+
+    def _best_available_kind(self, location):
+        others = [room for room in self._grid.rooms if room != location]
+        if any(r in self._memory and self._memory[r].status is Status.DIRTY for r in others):
+            return GOAL_DIRTY
+        if any(r not in self._memory for r in others):
+            return GOAL_UNKNOWN
+        return GOAL_EXPLORE
+
+    def _route_reaches_target(self, location):
+        if not self._route:
+            return False
+        try:
+            rooms = route_rooms(self._grid, location, self._route)
+        except ValueError:
+            return False
+        return rooms[-1] == self._target.room
 
     # ------------------------------------------------------------------
     # Hedef seçimi
@@ -381,9 +495,15 @@ class GoalBasedAgent(ModelBasedAgent):
     # Kurallar
     # ------------------------------------------------------------------
     def move_rule(self, location):
-        """Hareket kuralı (geçici): hedefe giden en kısa rotanın ilk adımı."""
-        self._target = self.choose_target(location)
-        return shortest_path(self._grid, location, self._target.room)[0]
+        """Hareket kuralı: gerekirse yeniden planla, rotanın ilk hareketini uygula."""
+        reason = self.replan_reason(location)
+        if reason is not None:
+            self._target = self.choose_target(location)
+            self._route = shortest_path(self._grid, location, self._target.room)
+            self._plan_version += 1
+            self._plan_reason = reason
+            self._replan_request = None
+        return self._route[0]
 
 
 # Simülasyon ve arayüzün kullandığı ajan türleri (anahtar -> sınıf).
