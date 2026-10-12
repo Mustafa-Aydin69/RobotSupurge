@@ -444,6 +444,33 @@ class WindowTests(unittest.TestCase):
                 self.assertTrue(app.start_button.winfo_ismapped())
                 self.assertTrue(app.log_text.winfo_ismapped())
 
+    def test_agent_type_selection_creates_matching_agent(self):
+        from agents import ModelBasedAgent, ReflexAgent
+        app = self.app
+        self.assertEqual(app.selected_agent_type(), "reflex")
+        app.start()
+        self.assertIsInstance(app.simulation.agent, ReflexAgent)
+        self.assertIn("Basit Refleks Ajan", self.log_lines()[0])
+        app.stop()
+
+        app.agent_var.set("Model Tabanlı Ajan")
+        app.rows_var.set("3")
+        app.cols_var.set("3")
+        app.start()
+        self.assertEqual(app.simulation.agent_type, "model")
+        self.assertIsInstance(app.simulation.agent, ModelBasedAgent)
+        self.assertIn("Model Tabanlı Ajan", self.log_lines()[0])
+
+    def test_agent_type_locked_while_running_and_paused(self):
+        app = self.app
+        self.assertEqual(str(app.agent_combo["state"]), "readonly")
+        app.start()
+        self.assertEqual(str(app.agent_combo["state"]), "disabled")
+        app.toggle_pause()
+        self.assertEqual(str(app.agent_combo["state"]), "disabled")
+        app.stop()
+        self.assertEqual(str(app.agent_combo["state"]), "readonly")
+
     def test_invalid_interval_falls_back_to_last_valid(self):
         self.app.step_var.set("abc")
         self.assertEqual(self.app._read_step_ms(), 700)

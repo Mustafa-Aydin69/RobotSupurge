@@ -14,6 +14,7 @@ import time
 import tkinter as tk
 from tkinter import messagebox, ttk
 
+from agents import AGENT_TYPES, DEFAULT_AGENT_TYPE
 from environment import MAX_GRID_SIZE, MIN_GRID_SIZE, Action, Grid, Status
 from simulation import DirtRecord, Simulation, SimulationState
 
@@ -30,6 +31,8 @@ DEFAULT_ROWS, DEFAULT_COLS = 1, 2
 # Arayüz metinleri (iç adlar İngilizce, ekranda Türkçe)
 # ----------------------------------------------------------------------
 STATUS_TEXT = {Status.CLEAN: "Temiz", Status.DIRTY: "Kirli"}
+AGENT_TYPE_TEXT = {key: cls.name for key, cls in AGENT_TYPES.items()}
+AGENT_TYPE_BY_TEXT = {text: key for key, text in AGENT_TYPE_TEXT.items()}
 ACTION_TEXT = {
     Action.CLEAN: "Temizle",
     Action.RIGHT: "Sağa git",
@@ -258,6 +261,15 @@ class VacuumApp:
         )
         self.cols_spin.grid(row=1, column=3, padx=(4, 16), pady=(6, 0))
 
+        ttk.Label(frame, text="Ajan türü:").grid(row=1, column=4, sticky="w", pady=(6, 0))
+        self.agent_var = tk.StringVar(value=AGENT_TYPE_TEXT[DEFAULT_AGENT_TYPE])
+        self.agent_combo = ttk.Combobox(
+            frame, textvariable=self.agent_var, values=list(AGENT_TYPE_TEXT.values()),
+            state="readonly", width=20,
+        )
+        self.agent_combo.grid(row=1, column=5, padx=(4, 0), pady=(6, 0), sticky="w")
+        self.agent_var.trace_add("write", lambda *_: self._on_grid_setting_changed())
+
         # Simülasyon çalışmıyorken boyut değişikliği tuvalde önizlenir.
         self.rows_var.trace_add("write", lambda *_: self._on_grid_setting_changed())
         self.cols_var.trace_add("write", lambda *_: self._on_grid_setting_changed())
@@ -265,7 +277,7 @@ class VacuumApp:
         ttk.Label(
             frame,
             text=("Aralıklar çalışırken de değiştirilebilir. Satır/sütun (1–6, en az 2 oda) "
-                  "yalnızca Başlat'ta uygulanır."),
+                  "ve ajan türü yalnızca Başlat'ta uygulanır."),
             foreground="#555",
         ).grid(row=2, column=0, columnspan=6, sticky="w", pady=(6, 0))
 
@@ -339,7 +351,7 @@ class VacuumApp:
             return
 
         self._cancel_timers()
-        self.simulation = Simulation(seed=seed, rows=rows, cols=cols)
+        self.simulation = Simulation(seed=seed, rows=rows, cols=cols, agent_type=self.selected_agent_type())
         self._last_action = None
         self._clear_log()
         self._append_log(self._start_message(seed), "info")
@@ -382,7 +394,8 @@ class VacuumApp:
     def _start_message(self, seed):
         env = self.simulation.environment
         seed_text = f", seed: {seed}" if seed is not None else ""
-        header = f"Simülasyon başladı ({env.grid.rows}×{env.grid.cols}{seed_text})."
+        agent_text = AGENT_TYPE_TEXT[self.simulation.agent_type]
+        header = f"Simülasyon başladı ({env.grid.rows}×{env.grid.cols}{seed_text}, {agent_text})."
         if env.grid.is_two_room:
             rooms = ", ".join(f"{room}: {STATUS_TEXT[env.status_of(room)]}" for room in env.rooms)
             return f"{header} Ajan {env.location} odasında; {rooms}"
@@ -390,6 +403,10 @@ class VacuumApp:
         dirty_text = ", ".join(dirty) if dirty else "yok"
         return (f"{header} Ajan {env.location} odasında; kirli odalar "
                 f"({len(dirty)}/{len(env.rooms)}): {dirty_text}")
+
+    def selected_agent_type(self):
+        """Seçim listesindeki ajan türünün anahtarı."""
+        return AGENT_TYPE_BY_TEXT.get(self.agent_var.get(), DEFAULT_AGENT_TYPE)
 
     def _on_grid_setting_changed(self):
         if not self._is_active():
@@ -494,6 +511,8 @@ class VacuumApp:
         # Grid boyutu çalışırken ve duraklatılmışken değiştirilemez.
         for spin in (self.rows_spin, self.cols_spin):
             spin.configure(state="disabled" if active else "normal")
+        # Ajan türü de çalışırken ve duraklatılmışken değiştirilemez.
+        self.agent_combo.configure(state="disabled" if active else "readonly")
 
     def _update_status(self):
         sim = self.simulation
@@ -504,7 +523,8 @@ class VacuumApp:
         env = sim.environment
         dirty = sum(1 for status in env.statuses().values() if status is Status.DIRTY)
         self.status_var.set(
-            f"Durum: {sim.state.value}   |   Ortam: {env.grid.rows}×{env.grid.cols}   |   "
+            f"Durum: {sim.state.value}   |   {AGENT_TYPE_TEXT[sim.agent_type]}   |   "
+            f"Ortam: {env.grid.rows}×{env.grid.cols}   |   "
             f"Kirli oda: {dirty}/{len(env.rooms)}   |   Adım: {sim.step_count}   |   "
             f"Temizleme: {sim.clean_count}   |   Hareket: {sim.move_count}   |   "
             f"Süre: {format_elapsed(sim.elapsed)}   |   Son eylem: {last}"
