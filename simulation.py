@@ -16,7 +16,7 @@ import time
 from dataclasses import dataclass
 from enum import Enum
 
-from agents import ReflexAgent
+from agents import AGENT_TYPES, DEFAULT_AGENT_TYPE
 from environment import DEFAULT_DIRT_PROBABILITY, Action, Environment, Status
 
 
@@ -52,7 +52,8 @@ class Simulation:
     ``seed`` verilirse ortamın başlangıcı ve kirlenmeler her seferinde aynı
     şekilde üretilir. ``rows`` ve ``cols`` grid boyutudur (varsayılan 1×2).
     ``location`` ve ``statuses`` verilirse başlangıç durumu rastgele seçilmez.
-    ``clock`` testlerde sahte bir saat vermek içindir.
+    ``clock`` testlerde sahte bir saat vermek içindir. ``agent_type``
+    ``agents.AGENT_TYPES`` anahtarlarından biridir (varsayılan: basit refleks).
     """
 
     def __init__(
@@ -64,8 +65,12 @@ class Simulation:
         clock=time.monotonic,
         rows=1,
         cols=2,
+        agent_type=DEFAULT_AGENT_TYPE,
     ):
+        if agent_type not in AGENT_TYPES:
+            raise ValueError(f"Bilinmeyen ajan türü: {agent_type!r}")
         self.seed = seed
+        self.agent_type = agent_type
         master_rng = random.Random(seed)
         # Ortamın üreteci ilk olarak türetilir; böylece 1×2'de aynı seed,
         # Faz 1 ile birebir aynı başlangıcı ve kirlenme dizisini üretir.
@@ -77,7 +82,8 @@ class Simulation:
             rows=rows,
             cols=cols,
         )
-        self.agent = ReflexAgent(
+        # Ajan yalnızca grid'i ve kendi rng'sini alır; ortama erişimi yoktur.
+        self.agent = AGENT_TYPES[agent_type](
             grid=self.environment.grid,
             rng=random.Random(master_rng.getrandbits(64)),
         )

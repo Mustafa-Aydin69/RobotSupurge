@@ -327,5 +327,72 @@ class ActionResultTests(unittest.TestCase):
         self.assertEqual([sim.step().action for _ in range(3)], [Action.CLEAN, Action.RIGHT, Action.CLEAN])
 
 
+class AgentTypeTests(unittest.TestCase):
+    def test_default_agent_is_reflex(self):
+        from agents import ReflexAgent
+        sim = Simulation(seed=0)
+        self.assertEqual(sim.agent_type, "reflex")
+        self.assertIsInstance(sim.agent, ReflexAgent)
+
+    def test_model_agent_can_be_selected(self):
+        from agents import ModelBasedAgent
+        sim = Simulation(seed=0, rows=3, cols=3, agent_type="model")
+        self.assertIsInstance(sim.agent, ModelBasedAgent)
+        self.assertIs(sim.agent.grid, sim.environment.grid)
+
+    def test_unknown_agent_type_is_rejected(self):
+        with self.assertRaises(ValueError):
+            Simulation(agent_type="goal")
+
+    def test_same_seed_gives_same_environment_for_both_agent_types(self):
+        a = Simulation(seed=21, rows=4, cols=4, agent_type="reflex")
+        b = Simulation(seed=21, rows=4, cols=4, agent_type="model")
+        self.assertEqual(
+            (a.environment.location, a.environment.statuses()),
+            (b.environment.location, b.environment.statuses()),
+        )
+
+
+def run_model_sim(seed, rows=4, cols=5, steps=300, read_snapshots=False):
+    sim = Simulation(seed=seed, rows=rows, cols=cols, agent_type="model", clock=FakeClock())
+    sim.start()
+    for i in range(steps):
+        sim.step()
+        if read_snapshots:
+            sim.agent.model_snapshot()
+        if i % 3 == 0:
+            sim.dirty_tick()
+    return sim
+
+
+class ModelSimulationTests(unittest.TestCase):
+    def test_model_simulation_is_reproducible_with_seed(self):
+        self.assertEqual(run_model_sim(8).log, run_model_sim(8).log)
+        self.assertNotEqual(run_model_sim(8).log, run_model_sim(9).log)
+
+    def test_reading_snapshots_does_not_change_behavior(self):
+        self.assertEqual(run_model_sim(5).log, run_model_sim(5, read_snapshots=True).log)
+
+    def test_model_contains_only_perceived_rooms(self):
+        """Ortam bilgisi sızmaz: model yalnızca günlükte algılanan odaları içerir."""
+        sim = Simulation(seed=2, rows=6, cols=6, agent_type="model", clock=FakeClock())
+        sim.start()
+        for _ in range(15):
+            sim.step()
+        perceived = {record.room for record in sim.log if isinstance(record, StepRecord)}
+        snapshot = sim.agent.model_snapshot()
+        self.assertEqual(set(snapshot.observations), perceived)
+        self.assertLess(len(perceived), 36, "15 adımda 36 odanın hepsi bilinemez")
+
+    def test_model_matches_last_percept_of_each_room(self):
+        sim = run_model_sim(3, steps=200)
+        snapshot = sim.agent.model_snapshot()
+        last = {}
+        for record in (r for r in sim.log if isinstance(r, StepRecord)):
+            # Kirli algıdan sonra başarılı Temizle: model odayı temiz (çıkarım) bilir.
+            last[record.room] = Status.CLEAN if record.action is Action.CLEAN else record.status
+        self.assertEqual({room: obs.status for room, obs in snapshot.observations.items()}, last)
+
+
 if __name__ == "__main__":
     unittest.main()

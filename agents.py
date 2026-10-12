@@ -226,3 +226,12 @@ class ModelBasedAgent:
         if observation is None:
             return (1, 0)
         return (0, self._step - observation.step)
+
+
+# Simülasyon ve arayüzün kullandığı ajan türleri (anahtar -> sınıf).
+# Sıra, arayüzdeki seçim listesinin sırasıdır; ilk tür varsayılandır.
+AGENT_TYPES = {
+    "reflex": ReflexAgent,
+    "model": ModelBasedAgent,
+}
+DEFAULT_AGENT_TYPE = "reflex"
