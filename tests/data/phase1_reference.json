@@ -1,0 +1,6772 @@
+[
+ {
+  "seed": 0,
+  "initial": {
+   "location": "B",
+   "statuses": {
+    "A": "Clean",
+    "B": "Dirty"
+   }
+  },
+  "events": [
+   {
+    "type": "step",
+    "step": 1,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 2,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 3,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 4,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 5,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 6,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 7,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 8,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 9,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 10,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 11,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 12,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 13,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 14,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 15,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A",
+     "B"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 16,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 17,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 18,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 19,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 20,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 21,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 22,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 23,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 24,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 25,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 26,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 27,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 28,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 29,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 30,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 31,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 32,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 33,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 34,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 35,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 36,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 37,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 38,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 39,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 40,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   }
+  ]
+ },
+ {
+  "seed": 1,
+  "initial": {
+   "location": "B",
+   "statuses": {
+    "A": "Clean",
+    "B": "Clean"
+   }
+  },
+  "events": [
+   {
+    "type": "step",
+    "step": 1,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 2,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 3,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A",
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 4,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 5,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 6,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 7,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 8,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 9,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A",
+     "B"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 10,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 11,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 12,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 13,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 14,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 15,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 16,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 17,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 18,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 19,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 20,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 21,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 22,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 23,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 24,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 25,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 26,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 27,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 28,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 29,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 30,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 31,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 32,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 33,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 34,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 35,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 36,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 37,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 38,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 39,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A",
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 40,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   }
+  ]
+ },
+ {
+  "seed": 2,
+  "initial": {
+   "location": "B",
+   "statuses": {
+    "A": "Dirty",
+    "B": "Clean"
+   }
+  },
+  "events": [
+   {
+    "type": "step",
+    "step": 1,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 2,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 3,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 4,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 5,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 6,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 7,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 8,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 9,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 10,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 11,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 12,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 13,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 14,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 15,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 16,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 17,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 18,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 19,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 20,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 21,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 22,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 23,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 24,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 25,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 26,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 27,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 28,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 29,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 30,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 31,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 32,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 33,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 34,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 35,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 36,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 37,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 38,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 39,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A",
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 40,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   }
+  ]
+ },
+ {
+  "seed": 3,
+  "initial": {
+   "location": "A",
+   "statuses": {
+    "A": "Dirty",
+    "B": "Dirty"
+   }
+  },
+  "events": [
+   {
+    "type": "step",
+    "step": 1,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 2,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 3,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 4,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 5,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 6,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 7,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 8,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 9,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 10,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 11,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 12,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 13,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 14,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 15,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 16,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 17,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 18,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 19,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 20,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 21,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 22,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 23,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 24,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 25,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 26,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 27,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 28,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 29,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 30,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 31,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 32,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 33,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 34,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 35,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 36,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 37,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 38,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 39,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 40,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   }
+  ]
+ },
+ {
+  "seed": 4,
+  "initial": {
+   "location": "B",
+   "statuses": {
+    "A": "Clean",
+    "B": "Dirty"
+   }
+  },
+  "events": [
+   {
+    "type": "step",
+    "step": 1,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 2,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 3,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 4,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 5,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 6,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 7,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 8,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 9,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 10,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 11,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 12,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 13,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 14,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 15,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 16,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 17,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 18,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 19,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 20,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 21,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A",
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 22,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 23,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 24,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A",
+     "B"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 25,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 26,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 27,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 28,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 29,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 30,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 31,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 32,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 33,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 34,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 35,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 36,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 37,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 38,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 39,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 40,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   }
+  ]
+ },
+ {
+  "seed": 5,
+  "initial": {
+   "location": "A",
+   "statuses": {
+    "A": "Clean",
+    "B": "Clean"
+   }
+  },
+  "events": [
+   {
+    "type": "step",
+    "step": 1,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 2,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 3,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 4,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 5,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 6,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 7,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 8,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 9,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 10,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 11,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 12,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 13,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 14,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 15,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 16,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 17,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 18,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 19,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 20,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 21,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 22,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 23,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 24,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A",
+     "B"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 25,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 26,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 27,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 28,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 29,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 30,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 31,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 32,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 33,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 34,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 35,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 36,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 37,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 38,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 39,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 40,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   }
+  ]
+ },
+ {
+  "seed": 6,
+  "initial": {
+   "location": "B",
+   "statuses": {
+    "A": "Clean",
+    "B": "Clean"
+   }
+  },
+  "events": [
+   {
+    "type": "step",
+    "step": 1,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 2,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 3,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 4,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 5,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 6,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 7,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 8,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 9,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 10,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 11,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 12,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A",
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 13,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 14,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 15,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 16,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 17,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 18,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 19,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 20,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 21,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 22,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 23,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 24,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 25,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 26,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 27,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 28,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 29,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 30,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 31,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 32,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 33,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 34,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 35,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 36,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 37,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 38,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 39,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 40,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   }
+  ]
+ },
+ {
+  "seed": 7,
+  "initial": {
+   "location": "A",
+   "statuses": {
+    "A": "Dirty",
+    "B": "Dirty"
+   }
+  },
+  "events": [
+   {
+    "type": "step",
+    "step": 1,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 2,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 3,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 4,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 5,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 6,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 7,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 8,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 9,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 10,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 11,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 12,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 13,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 14,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 15,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 16,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 17,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 18,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 19,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 20,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 21,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 22,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 23,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 24,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 25,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 26,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 27,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 28,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 29,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 30,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 31,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 32,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 33,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 34,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 35,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 36,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 37,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 38,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 39,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 40,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   }
+  ]
+ },
+ {
+  "seed": 8,
+  "initial": {
+   "location": "A",
+   "statuses": {
+    "A": "Dirty",
+    "B": "Clean"
+   }
+  },
+  "events": [
+   {
+    "type": "step",
+    "step": 1,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 2,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 3,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 4,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 5,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 6,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 7,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 8,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 9,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 10,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 11,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 12,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 13,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 14,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 15,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 16,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 17,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 18,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 19,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 20,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 21,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 22,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 23,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 24,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 25,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 26,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 27,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 28,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 29,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 30,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 31,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 32,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 33,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 34,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 35,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 36,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 37,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 38,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 39,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 40,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   }
+  ]
+ },
+ {
+  "seed": 9,
+  "initial": {
+   "location": "A",
+   "statuses": {
+    "A": "Dirty",
+    "B": "Dirty"
+   }
+  },
+  "events": [
+   {
+    "type": "step",
+    "step": 1,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 2,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 3,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 4,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 5,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 6,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 7,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 8,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 9,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A",
+     "B"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 10,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 11,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 12,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 13,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 14,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 15,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 16,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 17,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 18,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 19,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 20,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 21,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 22,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 23,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 24,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 25,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 26,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 27,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 28,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 29,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 30,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 31,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 32,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 33,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "A"
+    ],
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Dirty",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 34,
+    "room": "A",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 35,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 36,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 37,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 38,
+    "room": "B",
+    "status": "Clean",
+    "action": "Left",
+    "after": {
+     "location": "A",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 39,
+    "room": "A",
+    "status": "Clean",
+    "action": "Right",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   },
+   {
+    "type": "dirt",
+    "rooms": [
+     "B"
+    ],
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Dirty"
+     }
+    }
+   },
+   {
+    "type": "step",
+    "step": 40,
+    "room": "B",
+    "status": "Dirty",
+    "action": "Clean",
+    "after": {
+     "location": "B",
+     "statuses": {
+      "A": "Clean",
+      "B": "Clean"
+     }
+    }
+   }
+  ]
+ }
+]
