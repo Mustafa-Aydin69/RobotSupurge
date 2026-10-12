@@ -32,84 +32,25 @@ içindir. Ölçümler seed'lidir ve her çalıştırmada aynı sonucu üretir.
 """
 
 import argparse
-import random
 import statistics
 import sys
 
-from environment import Status
-from simulation import Simulation
+# Ölçüm çekirdeği comparison.py'dedir; bu araç yalnızca komut satırı arayüzüdür.
+from comparison import (  # noqa: F401  (geriye uyumluluk için dışa aktarılır)
+    AGENT_KEYS, common_dirt_rng, coverage_steps, mean_clean_ratio, same_initial_state,
+)
 
-AGENT_KEYS = ("reflex", "model", "goal")
 AGENT_LABELS = {"reflex": "refleks", "model": "model", "goal": "amaç"}
 COVERAGE_GRIDS = [(1, 6), (3, 3), (4, 4), (3, 5), (6, 6)]
 CLEAN_RATIO_GRIDS = [(1, 2), (3, 3), (4, 4), (6, 6)]
 
 
-def coverage_steps(agent_type, rows, cols, seed, cap=50000):
-    """Kirlenme kapalıyken bütün odaların ilk kez algılandığı adım (yoksa None)."""
-    sim = Simulation(seed=seed, rows=rows, cols=cols, agent_type=agent_type,
-                     dirt_probability=0.0, clock=lambda: 0.0)
-    sim.start()
-    perceived = set()
-    total = rows * cols
-    for _ in range(cap):
-        record = sim.step()
-        perceived.add(record.room)
-        if len(perceived) == total:
-            return record.step
-    return None
-
-
-def common_dirt_rng(seed):
-    """Ortak kirlenme denemeleri için ajandan bağımsız üreteç."""
-    return random.Random(f"common-dirt-{seed}")
-
-
 def apply_common_dirt(environment, rng, probability):
-    """Her oda için bir sayı çeker; temiz odayı olasılıkla kirletir.
-
-    Not: Ortamın herkese açık bir "odayı kirlet" metodu yoktur; bu ölçüm aracı
-    ortak rastgele sayıları uygulayabilmek için ortamın iç durumuna yazar.
-    Uygulamanın kendisi bu fonksiyonu kullanmaz.
-    """
-    newly_dirty = []
-    for room in environment.rooms:
-        draw = rng.random()  # oda kirli olsa da çekilir: dizi ajandan bağımsız kalır
-        if environment.status_of(room) is Status.CLEAN and draw < probability:
-            environment._statuses[room] = Status.DIRTY
-            newly_dirty.append(room)
-    return newly_dirty
-
-
-def mean_clean_ratio(agent_type, rows, cols, seed, steps=3000, dirt_every=4,
-                     probability=0.3, mode="independent"):
-    """Her adımdan sonra ölçülen temiz oda oranlarının ortalaması."""
-    if mode not in ("independent", "common"):
-        raise ValueError(f"Bilinmeyen kirlenme biçimi: {mode!r}")
-    sim = Simulation(seed=seed, rows=rows, cols=cols, agent_type=agent_type,
-                     dirt_probability=probability, clock=lambda: 0.0)
-    sim.start()
-    dirt_rng = common_dirt_rng(seed)
-    total_rooms = rows * cols
-    clean_sum = 0
-    for i in range(steps):
-        sim.step()
-        if i % dirt_every == 0:
-            if mode == "independent":
-                sim.dirty_tick()
-            else:
-                apply_common_dirt(sim.environment, dirt_rng, probability)
-        clean_sum += sum(status is Status.CLEAN for status in sim.environment.statuses().values())
-    return clean_sum / (steps * total_rooms)
-
-
-def same_initial_state(rows, cols, seed):
-    """Aynı seed'in bütün ajanlara aynı başlangıç durumunu verip vermediği."""
-    states = []
-    for agent_type in AGENT_KEYS:
-        env = Simulation(seed=seed, rows=rows, cols=cols, agent_type=agent_type).environment
-        states.append((env.location, env.statuses()))
-    return all(state == states[0] for state in states)
+    """Geriye uyumluluk: ortak kirlenme denemelerini ortamın genel metoduyla uygular."""
+    from comparison import common_dirt_draws
+    if probability != environment.dirt_probability:
+        raise ValueError("Olasılık ortamın kirlenme olasılığıyla aynı olmalıdır.")
+    return environment.apply_dirt_draws(common_dirt_draws(rng, len(environment.rooms)))
 
 
 def main(argv=None):

@@ -68,7 +68,7 @@ class CommonDirtTests(unittest.TestCase):
         self.assertEqual(rng_a.random(), rng_b.random())
 
     def test_only_clean_rooms_become_dirty(self):
-        env = Environment(rng=random.Random(0), rows=1, cols=3, location="A1",
+        env = Environment(rng=random.Random(0), rows=1, cols=3, location="A1", dirt_probability=1.0,
                           statuses={"A1": Status.DIRTY, "A2": Status.CLEAN, "A3": Status.CLEAN})
         self.assertEqual(apply_common_dirt(env, common_dirt_rng(0), 1.0), ["A2", "A3"])
         self.assertTrue(all(s is Status.DIRTY for s in env.statuses().values()))
