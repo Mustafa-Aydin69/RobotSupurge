@@ -82,6 +82,16 @@ class Grid:
     def __setattr__(self, name, value):
         raise AttributeError("Grid değiştirilemez.")
 
+    # Değiştirilemez olduğu için kopyalamak yerine aynı nesne paylaşılabilir.
+    def __copy__(self):
+        return self
+
+    def __deepcopy__(self, memo):
+        return self
+
+    def __reduce__(self):
+        return (Grid, (self.rows, self.cols))
+
     def __eq__(self, other):
         return isinstance(other, Grid) and (self.rows, self.cols) == (other.rows, other.cols)
 

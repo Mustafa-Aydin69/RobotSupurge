@@ -42,6 +42,14 @@ class GridValidationTests(unittest.TestCase):
             grid.rooms = ()
         self.assertIsInstance(grid.rooms, tuple)
 
+    def test_copy_and_pickle_preserve_grid(self):
+        import copy
+        import pickle
+        grid = Grid(3, 4)
+        self.assertIs(copy.copy(grid), grid)
+        self.assertIs(copy.deepcopy(grid), grid)
+        self.assertEqual(pickle.loads(pickle.dumps(grid)), grid)
+
     def test_equality(self):
         self.assertEqual(Grid(2, 3), Grid(2, 3))
         self.assertNotEqual(Grid(2, 3), Grid(3, 2))
