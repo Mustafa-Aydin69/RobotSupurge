@@ -14,6 +14,7 @@ Bu modül grafik arayüzden tamamen bağımsızdır.
 import random
 from collections import deque
 from dataclasses import dataclass
+from fractions import Fraction
 from types import MappingProxyType
 
 from environment import Action, Grid, Status
@@ -293,6 +294,96 @@ def route_rooms(grid, start, route):
         room = grid.neighbor(room, move)
         rooms.append(room)
     return tuple(rooms)
+
+
+# ----------------------------------------------------------------------
+# Amaç tabanlı ajan
+# ----------------------------------------------------------------------
+# Hedef türleri ve öncelikleri (büyük olan önce gelir)
+GOAL_DIRTY = "dirty"        # modelde kirli bilinen oda
+GOAL_UNKNOWN = "unknown"    # hiç algılanmamış oda
+GOAL_EXPLORE = "explore"    # bilgisi eskiyen, daha önce görülmüş oda
+GOAL_PRIORITY = {GOAL_DIRTY: 3, GOAL_UNKNOWN: 2, GOAL_EXPLORE: 1}
+
+
+@dataclass(frozen=True)
+class Target:
+    """Seçilen hedef ve seçim gerekçesi."""
+
+    room: str
+    kind: str            # GOAL_DIRTY | GOAL_UNKNOWN | GOAL_EXPLORE
+    distance: int        # seçim anındaki BFS mesafesi
+    score: object        # keşifte (yaş + d) / d, diğer türlerde None
+
+
+class GoalBasedAgent(ModelBasedAgent):
+    """Amaç tabanlı ajan (goal-based agent).
+
+    Model tabanlı ajanın iç modelini aynen kullanır. Amacı: temiz olduğundan
+    en az emin olunan odayı kontrol etmek ve kirliyse temizlemek. Bunun için
+    açık bir hedef oda seçer, oraya BFS ile en kısa rotayı çıkarır ve rotayı
+    adım adım izler.
+
+    Hedef öncelikleri (yalnızca iç model, grid ve ajanın kendi konumu kullanılır):
+
+    1. Bilinen kirli oda: en kısa BFS mesafesindeki.
+    2. Hiç algılanmamış oda: en kısa BFS mesafesindeki.
+    3. Keşif: daha önce görülmüş odalar arasında ``(yaş + d) / d`` puanı en
+       yüksek olan. Bu sezgisel bir kuraldır; kesin bir kirlenme olasılığı ya
+       da kanıtlanmış en iyi strateji değildir.
+
+    Eşitlikte önce kısa mesafe, sonra seed'li rastgele seçim kullanılır.
+    Ajanın bulunduğu oda hedef olarak seçilmez.
+    """
+
+    name = "Amaç Tabanlı Ajan"
+
+    __slots__ = ("_target",)
+
+    def __init__(self, grid=None, rng=None):
+        super().__init__(grid=grid, rng=rng)
+        self._target = None
+
+    # ------------------------------------------------------------------
+    # Hedef seçimi
+    # ------------------------------------------------------------------
+    def choose_target(self, location):
+        """İç modele göre en uygun hedefi seçer (bulunulan oda hariç)."""
+        distances = bfs_distances(self._grid, location)
+        candidates = [room for room in self._grid.rooms if room != location]
+
+        dirty = [r for r in candidates
+                 if r in self._memory and self._memory[r].status is Status.DIRTY]
+        if dirty:
+            return self._nearest(dirty, distances, GOAL_DIRTY)
+
+        unknown = [r for r in candidates if r not in self._memory]
+        if unknown:
+            return self._nearest(unknown, distances, GOAL_UNKNOWN)
+
+        scores = {}
+        for room in candidates:
+            age = self._step - self._memory[room].step
+            d = distances[room]
+            scores[room] = Fraction(age + d, d)
+        best_score = max(scores.values())
+        best = [r for r in candidates if scores[r] == best_score]
+        shortest = min(distances[r] for r in best)
+        room = self._rng.choice([r for r in best if distances[r] == shortest])
+        return Target(room, GOAL_EXPLORE, distances[room], best_score)
+
+    def _nearest(self, rooms, distances, kind):
+        shortest = min(distances[r] for r in rooms)
+        room = self._rng.choice([r for r in rooms if distances[r] == shortest])
+        return Target(room, kind, shortest, None)
+
+    # ------------------------------------------------------------------
+    # Kurallar
+    # ------------------------------------------------------------------
+    def move_rule(self, location):
+        """Hareket kuralı (geçici): hedefe giden en kısa rotanın ilk adımı."""
+        self._target = self.choose_target(location)
+        return shortest_path(self._grid, location, self._target.room)[0]
 
 
 # Simülasyon ve arayüzün kullandığı ajan türleri (anahtar -> sınıf).
