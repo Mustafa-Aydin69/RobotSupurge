@@ -34,6 +34,7 @@ COLOR_GOAL = "#7b3fbf"
 # İç model paneli renkleri
 COLOR_MODEL_UNKNOWN = "#e2e2e2"
 COLOR_MODEL_STALE = "#f2e3a0"
+COLOR_STALE_HATCH = "#b8962e"     # eskimiş bilginin çizgili deseni
 
 # İç model kategorileri ve ekrandaki adları
 MODEL_UNKNOWN, MODEL_CLEAN, MODEL_INFERRED, MODEL_STALE, MODEL_DIRTY = (
@@ -43,7 +44,7 @@ MODEL_CATEGORY_TEXT = {
     MODEL_UNKNOWN: "?",
     MODEL_CLEAN: "Temiz",
     MODEL_INFERRED: "Çıkarım",
-    MODEL_STALE: "Eskimiş",
+    MODEL_STALE: "Eski",
     MODEL_DIRTY: "Kirli",
 }
 MODEL_CATEGORY_FILL = {
@@ -108,10 +109,29 @@ def empty_snapshot():
 def model_legend_text(threshold):
     """İç model panelinin lejantı."""
     return (
-        "Gri ?: bilinmiyor · Yeşil: temiz · Kesikli kenar: çıkarımla temiz · "
-        f"Sarı: eskimiş (yaş ≥ {threshold}) · Kahverengi: kirli. "
+        "?  gri: bilinmiyor · yeşil: temiz (algı) · kesikli kenar: temiz (çıkarım) · "
+        f"sarı + çizgili, \"Eski\": eskimiş bilgi (yaş ≥ {threshold}) · kahverengi: kirli\n"
+        "● mavi nokta: ajanın bildiği konumu · □ mor çerçeve ve ok: hedef ve rota. "
         "Yaş, son bilgiden bu yana geçen ajan adımıdır; gerçek süre değildir."
     )
+
+
+def environment_legend_text():
+    """Gerçek ortam panelinin lejantı."""
+    return ("Yeşil, T: temiz · Kahverengi lekeli, K: kirli · Mavi çerçeve ve robot: "
+            "robotun odası · ◆ mor elmas: ajanın hedefi (amaç tabanlı ajan)")
+
+
+def _draw_hatch(canvas, left, top, right, bottom, spacing, tags):
+    """Dikdörtgenin içine çapraz çizgili tarama deseni çizer (renk dışı ipucu)."""
+    width, height = right - left, bottom - top
+    offset = spacing
+    while offset < width + height:
+        # Sol kenar/üst kenar boyunca başlayıp sağ kenar/alt kenarda biten çizgi.
+        x0, y0 = left + max(0.0, offset - height), top + min(offset, height)
+        x1, y1 = left + min(offset, width), top + max(0.0, offset - width)
+        canvas.create_line(x0, y0, x1, y1, fill=COLOR_STALE_HATCH, tags=tags)
+        offset += spacing
 
 
 def _canvas_size(canvas, default_width, default_height):
@@ -150,6 +170,9 @@ def draw_model(canvas, grid, snapshot, plan, threshold, default_size):
             dash=(4, 3) if observation is not None and observation.source == SOURCE_INFERENCE else (),
             tags=("model-room", f"model:{room}", f"category:{category}"),
         )
+        if category == MODEL_STALE:
+            _draw_hatch(c, left + 1, top + 1, right - 1, bottom - 1, max(6.0, size / 6),
+                        ("stale-pattern", f"stale:{room}"))
         center_x, center_y = (left + right) / 2, (top + bottom) / 2
         c.create_text(center_x, top + max(8, size * 0.14), text=room, font=title_font)
         if category == MODEL_UNKNOWN:
@@ -160,7 +183,9 @@ def draw_model(canvas, grid, snapshot, plan, threshold, default_size):
             if size >= 50:
                 c.create_text(center_x, center_y, text=MODEL_CATEGORY_TEXT[category], font=info_font)
             if size >= 26:
-                c.create_text(center_x, bottom - max(7, size * 0.14), text=f"yaş {age}", font=info_font)
+                # Küçük hücrede ayrı etiket sığmadığı için eskilik yaş satırında belirtilir.
+                age_text = f"eski {age}" if category == MODEL_STALE and size < 50 else f"yaş {age}"
+                c.create_text(center_x, bottom - max(7, size * 0.14), text=age_text, font=info_font)
         if is_current:
             # Ajanın kendi konum bilgisi: sağ üst köşede küçük işaret.
             r = max(2.5, min(7.0, size * 0.07))
@@ -239,6 +264,12 @@ def draw_environment(canvas, grid, env, plan, default_size):
         if size >= 60:
             status_label = STATUS_TEXT[status] if status else "—"
             c.create_text((left + right) / 2, bottom - max(8, size * 0.08), text=status_label, font=status_font)
+        elif status is not None:
+            # Küçük hücrede durum yazısı sığmaz: sağ alt köşede T (temiz) / K (kirli).
+            mark = "T" if status is Status.CLEAN else "K"
+            c.create_text(right - 3, bottom - 2, text=mark, anchor="se",
+                          font=("Segoe UI", max(7, int(size * 0.16)), "bold"),
+                          tags=("status-mark", f"mark:{room}:{mark}"))
 
         if plan is not None and plan.target is not None and plan.target.room == room:
             # Gerçek ortamda yalnızca ajanın hedefi işaretlenir (rota gösterilmez).

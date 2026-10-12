@@ -22,7 +22,8 @@ from timers import PausableTimer  # noqa: F401  (testler ve geriye uyumluluk iç
 from views import (  # noqa: F401  (testler ve geriye uyumluluk için dışa aktarılır)
     COLOR_GOAL, MODEL_CATEGORY_FILL, MODEL_CATEGORY_TEXT, MODEL_CLEAN, MODEL_DIRTY, MODEL_INFERRED,
     MODEL_PANEL_TITLE, MODEL_STALE, MODEL_UNKNOWN, STATUS_TEXT, compute_layout, draw_environment,
-    draw_model, empty_snapshot, model_category, model_legend_text, stale_threshold,
+    draw_model, empty_snapshot, environment_legend_text, model_category, model_legend_text,
+    stale_threshold,
 )
 
 # ----------------------------------------------------------------------
@@ -250,6 +251,10 @@ class VacuumApp:
             self.env_frame, width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT,
             background="white", highlightthickness=0,
         )
+        self.env_legend = ttk.Label(self.env_frame, text=environment_legend_text(),
+                                    foreground="#555", font=("Segoe UI", 8))
+        self.env_legend.bind("<Configure>", lambda e: self.env_legend.configure(wraplength=max(120, e.width - 4)))
+        self.env_legend.pack(side="bottom", fill="x")
         self.canvas.pack(fill="both", expand=True)
 
         self.model_frame = ttk.LabelFrame(self.board, text=MODEL_PANEL_TITLE, padding=2)

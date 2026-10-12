@@ -901,6 +901,52 @@ class WindowTests(unittest.TestCase):
         self.root.update()
         self.assertGreaterEqual(app.log_text.yview()[1], 0.999, "Gizliyken eklenen satırlar takip edilmeli")
 
+    def test_stale_cells_have_hatch_pattern_and_label(self):
+        app = self.app
+        grid = Grid(2, 2)
+        snapshot = ModelSnapshot(20, "A1", MappingProxyType({
+            "A1": Observation(Status.CLEAN, 20, SOURCE_PERCEPT),
+            "A2": Observation(Status.CLEAN, 2, SOURCE_PERCEPT),     # yaş 18 >= eşik 4: eski
+        }))
+        app._draw_model(grid, snapshot)
+        self.assertTrue(app.model_canvas.find_withtag("stale:A2"), "Eski hücrede tarama deseni olmalı")
+        self.assertFalse(app.model_canvas.find_withtag("stale:A1"))
+        texts = [app.model_canvas.itemcget(i, "text") for i in app.model_canvas.find_all()
+                 if app.model_canvas.type(i) == "text"]
+        self.assertTrue(any(t in ("Eski", "eski 18") for t in texts))
+
+    def test_small_cells_show_clean_dirty_letters(self):
+        app = self.app
+        app.rows_var.set("6")
+        app.cols_var.set("6")
+        app.start()
+        self.root.update()
+        app._draw()
+        env = app.simulation.environment
+        marks = app.canvas.find_withtag("status-mark")
+        self.assertEqual(len(marks), 36)
+        for room in env.rooms:
+            letter = "T" if env.status_of(room) is Status.CLEAN else "K"
+            self.assertEqual(len(app.canvas.find_withtag(f"mark:{room}:{letter}")), 1)
+
+    def test_large_cells_use_words_not_letters(self):
+        app = self.app
+        app.start()                                   # 1×2: büyük hücreler
+        self.root.update()
+        app._draw()
+        self.assertEqual(app.canvas.find_withtag("status-mark"), ())
+
+    def test_legends_explain_symbols(self):
+        app = self.app
+        app.agent_var.set("Amaç Tabanlı Ajan")
+        self.root.update()
+        env_legend = app.env_legend["text"]
+        for word in ("T: temiz", "K: kirli", "robot", "hedef"):
+            self.assertIn(word, env_legend)
+        model_legend = app.model_legend_var.get()
+        for word in ("bilinmiyor", "çıkarım", "Eski", "kirli", "konumu", "rota", "ajan adımı"):
+            self.assertIn(word, model_legend)
+
     def test_invalid_interval_falls_back_to_last_valid(self):
         self.app.step_var.set("abc")
         self.assertEqual(self.app._read_step_ms(), 700)
