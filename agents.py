@@ -12,6 +12,8 @@ Bu modül grafik arayüzden tamamen bağımsızdır.
 """
 
 import random
+from dataclasses import dataclass
+from types import MappingProxyType
 
 from environment import Action, Grid, Status
 
@@ -79,4 +81,126 @@ class ReflexAgent:
         """
         if self._grid.is_two_room:
             return self.MOVE_RULES[location]
+        return self._rng.choice(self._grid.valid_moves(location))
+
+
+# Bilginin kaynağı
+SOURCE_PERCEPT = "algı"       # ajan odayı bizzat algıladı
+SOURCE_INFERENCE = "çıkarım"  # ajan kendi başarılı eyleminden sonucu çıkardı
+
+
+@dataclass(frozen=True)
+class Observation:
+    """İç modeldeki bir odanın son bilinen durumu."""
+
+    status: Status
+    step: int      # bilginin ait olduğu ajan adımı
+    source: str    # SOURCE_PERCEPT ya da SOURCE_INFERENCE
+
+
+@dataclass(frozen=True)
+class ModelSnapshot:
+    """İç modelin salt okunur kopyası (arayüz ve testler için).
+
+    ``observations`` değiştirilemez bir eşlemedir; içindeki ``Observation``
+    nesneleri de değiştirilemez. Kopya üzerinde yapılan hiçbir işlem ajanın
+    belleğini etkilemez.
+    """
+
+    step: int
+    location: str
+    observations: MappingProxyType
+
+    def age_of(self, room):
+        """Odanın son bilgisinden bu yana geçen ajan adımı; bilinmiyorsa None."""
+        observation = self.observations.get(room)
+        return None if observation is None else self.step - observation.step
+
+
+class ModelBasedAgent:
+    """Model tabanlı ajan (model-based reflex agent).
+
+    Algılarından bir iç model kurar: her oda için son bilinen durum, bu
+    bilginin ait olduğu adım ve bilginin kaynağı. Hiç algılanmamış odalar
+    modelde yer almaz, yani bilinmiyor kabul edilir.
+
+    Ajan ortamın tamamını göremez. Model yalnızca iki yoldan güncellenir:
+
+    * ``act`` içinde güncel algı modele yazılır (güncel algı her zaman eski
+      bilginin önüne geçer),
+    * ``action_result`` ile başarılı olduğu bildirilen Temizle eyleminden sonra
+      oda "temiz (çıkarım)" olarak kaydedilir. Bir sonraki algı bu çıkarımı
+      doğrular ya da düzeltir.
+
+    Gözlem yaşı ajanın kendi adım sayısıyla ölçülür; gerçek süre ya da kesin
+    bir kirlenme olasılığı değildir.
+    """
+
+    name = "Model Tabanlı Ajan"
+
+    __slots__ = ("_grid", "_rng", "_memory", "_step", "_location", "_pending")
+
+    def __init__(self, grid=None, rng=None):
+        self._grid = grid if grid is not None else Grid()
+        self._rng = rng if rng is not None else random.Random()
+        self._memory = {}       # oda -> Observation
+        self._step = 0          # ajanın aldığı algı sayısı
+        self._location = None   # son algıdaki oda
+        self._pending = None    # sonucu beklenen eylem: (oda, eylem)
+
+    @property
+    def grid(self):
+        return self._grid
+
+    # ------------------------------------------------------------------
+    # Ajan arayüzü
+    # ------------------------------------------------------------------
+    def act(self, percept):
+        self.update_model(percept)
+        location, status = percept
+        if status is Status.DIRTY:
+            action = self.clean_rule()
+        else:
+            action = self.move_rule(location)
+        self._pending = (location, action)
+        return action
+
+    def action_result(self, action, succeeded):
+        """Eylem sonucunu modele işler.
+
+        Yalnızca başarılı bir Temizle eyleminden sonra oda "temiz (çıkarım)"
+        olarak kaydedilir. Başarısız eylemden hiçbir çıkarım yapılmaz.
+        """
+        pending, self._pending = self._pending, None
+        if pending is None or pending[1] is not action or not succeeded:
+            return
+        room, _ = pending
+        if action is Action.CLEAN:
+            self._memory[room] = Observation(Status.CLEAN, self._step, SOURCE_INFERENCE)
+
+    # ------------------------------------------------------------------
+    # Model güncelleme
+    # ------------------------------------------------------------------
+    def update_model(self, percept):
+        """Güncel algıyı modele yazar ve ajan adım sayacını artırır."""
+        location, status = percept
+        self._grid.position_of(location)  # bilinmeyen oda adı reddedilir
+        self._step += 1
+        self._location = location
+        self._memory[location] = Observation(status, self._step, SOURCE_PERCEPT)
+
+    def model_snapshot(self):
+        """İç modelin salt okunur bir kopyası."""
+        return ModelSnapshot(self._step, self._location, MappingProxyType(dict(self._memory)))
+
+    # ------------------------------------------------------------------
+    # Kurallar
+    # ------------------------------------------------------------------
+    @staticmethod
+    def clean_rule():
+        """Temizleme kuralı: bulunulan oda kirliyse temizle."""
+        return Action.CLEAN
+
+    def move_rule(self, location):
+        """Hareket kuralı (geçici): geçerli hareketlerden rastgele biri."""
         return self._rng.choice(self._grid.valid_moves(location))
