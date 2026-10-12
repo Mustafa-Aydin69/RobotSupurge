@@ -202,5 +202,27 @@ class ModelBasedAgent:
         return Action.CLEAN
 
     def move_rule(self, location):
-        """Hareket kuralı (geçici): geçerli hareketlerden rastgele biri."""
-        return self._rng.choice(self._grid.valid_moves(location))
+        """Hareket kuralı: modele göre en çok bakılması gereken komşuya git.
+
+        1. Hiç algılanmamış (bilinmeyen) komşular önceliklidir.
+        2. Bütün komşular biliniyorsa son bilgisi en eski olan komşu seçilir.
+        3. Eşitlikte adaylardan biri seed'li rng ile rastgele seçilir.
+
+        Yalnızca bulunulan odadan geçerli olan hareketler değerlendirilir.
+        """
+        moves = self._grid.valid_moves(location)
+        priorities = {move: self.neighbor_priority(self._grid.neighbor(location, move)) for move in moves}
+        best = max(priorities.values())
+        candidates = [move for move in moves if priorities[move] == best]
+        return self._rng.choice(candidates)
+
+    def neighbor_priority(self, room):
+        """Bir komşunun önceliği: (bilinmiyor mu, gözlem yaşı).
+
+        Bilinmeyen oda her bilinen odadan önce gelir; bilinen odalar arasında
+        yaşı büyük olan öne geçer.
+        """
+        observation = self._memory.get(room)
+        if observation is None:
+            return (1, 0)
+        return (0, self._step - observation.step)
