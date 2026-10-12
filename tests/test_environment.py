@@ -203,5 +203,36 @@ class GridEnvironmentTests(unittest.TestCase):
         self.assertEqual((a.location, a.statuses()), (b.location, b.statuses()))
 
 
+class DirtDrawTests(unittest.TestCase):
+    """Önceden üretilmiş kirlenme denemeleri (apply_dirt_draws)."""
+
+    def test_only_clean_rooms_below_probability_become_dirty(self):
+        env = make_grid_env(1, 4, "A1", dirty=("A2",), dirt_probability=0.3)
+        newly = env.apply_dirt_draws([0.1, 0.1, 0.5, 0.29])
+        self.assertEqual(newly, ["A1", "A4"])           # A2 zaten kirli, A3 olasılığın üstünde
+        self.assertEqual(env.location, "A1")
+
+    def test_does_not_use_environment_rng(self):
+        a = Environment(rng=random.Random(5), rows=3, cols=3)
+        b = Environment(rng=random.Random(5), rows=3, cols=3)
+        a.apply_dirt_draws([0.9] * 9)                   # hiçbir oda kirlenmez, rng kullanılmaz
+        self.assertEqual([a.dirty_tick() for _ in range(20)], [b.dirty_tick() for _ in range(20)])
+
+    def test_invalid_draws_are_rejected_without_changes(self):
+        env = make_grid_env(2, 2, "A1")
+        before = env.statuses()
+        for draws in ([0.1] * 3, [0.1] * 5, [0.1, 0.1, 0.1, 1.0], [0.1, -0.1, 0.1, 0.1]):
+            with self.subTest(draws=draws), self.assertRaises(ValueError):
+                env.apply_dirt_draws(draws)
+        self.assertEqual(env.statuses(), before)
+
+    def test_same_draws_give_same_result(self):
+        draws = [random.Random(3).random() for _ in range(12)]
+        a = make_grid_env(3, 4, "A1")
+        b = make_grid_env(3, 4, "A1")
+        self.assertEqual(a.apply_dirt_draws(draws), b.apply_dirt_draws(draws))
+        self.assertEqual(a.statuses(), b.statuses())
+
+
 if __name__ == "__main__":
     unittest.main()

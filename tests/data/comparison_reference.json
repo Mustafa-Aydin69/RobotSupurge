@@ -1,0 +1,799 @@
+{
+ "source": "tools/compare_agents.py @ 2436db8 (Faz 4)",
+ "coverage": [
+  {
+   "agent": "reflex",
+   "rows": 3,
+   "cols": 3,
+   "seed": 0,
+   "value": 29
+  },
+  {
+   "agent": "reflex",
+   "rows": 3,
+   "cols": 3,
+   "seed": 1,
+   "value": 44
+  },
+  {
+   "agent": "reflex",
+   "rows": 3,
+   "cols": 3,
+   "seed": 2,
+   "value": 39
+  },
+  {
+   "agent": "reflex",
+   "rows": 3,
+   "cols": 3,
+   "seed": 3,
+   "value": 19
+  },
+  {
+   "agent": "reflex",
+   "rows": 4,
+   "cols": 4,
+   "seed": 0,
+   "value": 77
+  },
+  {
+   "agent": "reflex",
+   "rows": 4,
+   "cols": 4,
+   "seed": 1,
+   "value": 196
+  },
+  {
+   "agent": "reflex",
+   "rows": 4,
+   "cols": 4,
+   "seed": 2,
+   "value": 145
+  },
+  {
+   "agent": "reflex",
+   "rows": 4,
+   "cols": 4,
+   "seed": 3,
+   "value": 70
+  },
+  {
+   "agent": "reflex",
+   "rows": 6,
+   "cols": 6,
+   "seed": 0,
+   "value": 274
+  },
+  {
+   "agent": "reflex",
+   "rows": 6,
+   "cols": 6,
+   "seed": 1,
+   "value": 206
+  },
+  {
+   "agent": "reflex",
+   "rows": 6,
+   "cols": 6,
+   "seed": 2,
+   "value": 417
+  },
+  {
+   "agent": "reflex",
+   "rows": 6,
+   "cols": 6,
+   "seed": 3,
+   "value": 243
+  },
+  {
+   "agent": "model",
+   "rows": 3,
+   "cols": 3,
+   "seed": 0,
+   "value": 15
+  },
+  {
+   "agent": "model",
+   "rows": 3,
+   "cols": 3,
+   "seed": 1,
+   "value": 14
+  },
+  {
+   "agent": "model",
+   "rows": 3,
+   "cols": 3,
+   "seed": 2,
+   "value": 12
+  },
+  {
+   "agent": "model",
+   "rows": 3,
+   "cols": 3,
+   "seed": 3,
+   "value": 13
+  },
+  {
+   "agent": "model",
+   "rows": 4,
+   "cols": 4,
+   "seed": 0,
+   "value": 26
+  },
+  {
+   "agent": "model",
+   "rows": 4,
+   "cols": 4,
+   "seed": 1,
+   "value": 24
+  },
+  {
+   "agent": "model",
+   "rows": 4,
+   "cols": 4,
+   "seed": 2,
+   "value": 26
+  },
+  {
+   "agent": "model",
+   "rows": 4,
+   "cols": 4,
+   "seed": 3,
+   "value": 27
+  },
+  {
+   "agent": "model",
+   "rows": 6,
+   "cols": 6,
+   "seed": 0,
+   "value": 70
+  },
+  {
+   "agent": "model",
+   "rows": 6,
+   "cols": 6,
+   "seed": 1,
+   "value": 70
+  },
+  {
+   "agent": "model",
+   "rows": 6,
+   "cols": 6,
+   "seed": 2,
+   "value": 91
+  },
+  {
+   "agent": "model",
+   "rows": 6,
+   "cols": 6,
+   "seed": 3,
+   "value": 60
+  },
+  {
+   "agent": "goal",
+   "rows": 3,
+   "cols": 3,
+   "seed": 0,
+   "value": 15
+  },
+  {
+   "agent": "goal",
+   "rows": 3,
+   "cols": 3,
+   "seed": 1,
+   "value": 14
+  },
+  {
+   "agent": "goal",
+   "rows": 3,
+   "cols": 3,
+   "seed": 2,
+   "value": 14
+  },
+  {
+   "agent": "goal",
+   "rows": 3,
+   "cols": 3,
+   "seed": 3,
+   "value": 15
+  },
+  {
+   "agent": "goal",
+   "rows": 4,
+   "cols": 4,
+   "seed": 0,
+   "value": 25
+  },
+  {
+   "agent": "goal",
+   "rows": 4,
+   "cols": 4,
+   "seed": 1,
+   "value": 23
+  },
+  {
+   "agent": "goal",
+   "rows": 4,
+   "cols": 4,
+   "seed": 2,
+   "value": 25
+  },
+  {
+   "agent": "goal",
+   "rows": 4,
+   "cols": 4,
+   "seed": 3,
+   "value": 25
+  },
+  {
+   "agent": "goal",
+   "rows": 6,
+   "cols": 6,
+   "seed": 0,
+   "value": 60
+  },
+  {
+   "agent": "goal",
+   "rows": 6,
+   "cols": 6,
+   "seed": 1,
+   "value": 61
+  },
+  {
+   "agent": "goal",
+   "rows": 6,
+   "cols": 6,
+   "seed": 2,
+   "value": 59
+  },
+  {
+   "agent": "goal",
+   "rows": 6,
+   "cols": 6,
+   "seed": 3,
+   "value": 62
+  }
+ ],
+ "clean_ratio": [
+  {
+   "agent": "reflex",
+   "rows": 1,
+   "cols": 2,
+   "seed": 0,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.89125
+  },
+  {
+   "agent": "reflex",
+   "rows": 1,
+   "cols": 2,
+   "seed": 0,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.89
+  },
+  {
+   "agent": "reflex",
+   "rows": 1,
+   "cols": 2,
+   "seed": 1,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.86875
+  },
+  {
+   "agent": "reflex",
+   "rows": 1,
+   "cols": 2,
+   "seed": 1,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.885
+  },
+  {
+   "agent": "reflex",
+   "rows": 1,
+   "cols": 2,
+   "seed": 2,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.86625
+  },
+  {
+   "agent": "reflex",
+   "rows": 1,
+   "cols": 2,
+   "seed": 2,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.86625
+  },
+  {
+   "agent": "reflex",
+   "rows": 3,
+   "cols": 3,
+   "seed": 0,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.3938888888888889
+  },
+  {
+   "agent": "reflex",
+   "rows": 3,
+   "cols": 3,
+   "seed": 0,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.49833333333333335
+  },
+  {
+   "agent": "reflex",
+   "rows": 3,
+   "cols": 3,
+   "seed": 1,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.43583333333333335
+  },
+  {
+   "agent": "reflex",
+   "rows": 3,
+   "cols": 3,
+   "seed": 1,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.4475
+  },
+  {
+   "agent": "reflex",
+   "rows": 3,
+   "cols": 3,
+   "seed": 2,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.4147222222222222
+  },
+  {
+   "agent": "reflex",
+   "rows": 3,
+   "cols": 3,
+   "seed": 2,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.47694444444444445
+  },
+  {
+   "agent": "reflex",
+   "rows": 4,
+   "cols": 5,
+   "seed": 0,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.194
+  },
+  {
+   "agent": "reflex",
+   "rows": 4,
+   "cols": 5,
+   "seed": 0,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.22625
+  },
+  {
+   "agent": "reflex",
+   "rows": 4,
+   "cols": 5,
+   "seed": 1,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.231
+  },
+  {
+   "agent": "reflex",
+   "rows": 4,
+   "cols": 5,
+   "seed": 1,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.194875
+  },
+  {
+   "agent": "reflex",
+   "rows": 4,
+   "cols": 5,
+   "seed": 2,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.20575
+  },
+  {
+   "agent": "reflex",
+   "rows": 4,
+   "cols": 5,
+   "seed": 2,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.234125
+  },
+  {
+   "agent": "model",
+   "rows": 1,
+   "cols": 2,
+   "seed": 0,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.89125
+  },
+  {
+   "agent": "model",
+   "rows": 1,
+   "cols": 2,
+   "seed": 0,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.89
+  },
+  {
+   "agent": "model",
+   "rows": 1,
+   "cols": 2,
+   "seed": 1,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.86875
+  },
+  {
+   "agent": "model",
+   "rows": 1,
+   "cols": 2,
+   "seed": 1,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.885
+  },
+  {
+   "agent": "model",
+   "rows": 1,
+   "cols": 2,
+   "seed": 2,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.86625
+  },
+  {
+   "agent": "model",
+   "rows": 1,
+   "cols": 2,
+   "seed": 2,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.86625
+  },
+  {
+   "agent": "model",
+   "rows": 3,
+   "cols": 3,
+   "seed": 0,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.4672222222222222
+  },
+  {
+   "agent": "model",
+   "rows": 3,
+   "cols": 3,
+   "seed": 0,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.5091666666666667
+  },
+  {
+   "agent": "model",
+   "rows": 3,
+   "cols": 3,
+   "seed": 1,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.5444444444444444
+  },
+  {
+   "agent": "model",
+   "rows": 3,
+   "cols": 3,
+   "seed": 1,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.4866666666666667
+  },
+  {
+   "agent": "model",
+   "rows": 3,
+   "cols": 3,
+   "seed": 2,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.51
+  },
+  {
+   "agent": "model",
+   "rows": 3,
+   "cols": 3,
+   "seed": 2,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.5525
+  },
+  {
+   "agent": "model",
+   "rows": 4,
+   "cols": 5,
+   "seed": 0,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.235875
+  },
+  {
+   "agent": "model",
+   "rows": 4,
+   "cols": 5,
+   "seed": 0,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.285125
+  },
+  {
+   "agent": "model",
+   "rows": 4,
+   "cols": 5,
+   "seed": 1,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.282125
+  },
+  {
+   "agent": "model",
+   "rows": 4,
+   "cols": 5,
+   "seed": 1,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.259875
+  },
+  {
+   "agent": "model",
+   "rows": 4,
+   "cols": 5,
+   "seed": 2,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.265
+  },
+  {
+   "agent": "model",
+   "rows": 4,
+   "cols": 5,
+   "seed": 2,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.27575
+  },
+  {
+   "agent": "goal",
+   "rows": 1,
+   "cols": 2,
+   "seed": 0,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.89125
+  },
+  {
+   "agent": "goal",
+   "rows": 1,
+   "cols": 2,
+   "seed": 0,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.89
+  },
+  {
+   "agent": "goal",
+   "rows": 1,
+   "cols": 2,
+   "seed": 1,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.86875
+  },
+  {
+   "agent": "goal",
+   "rows": 1,
+   "cols": 2,
+   "seed": 1,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.885
+  },
+  {
+   "agent": "goal",
+   "rows": 1,
+   "cols": 2,
+   "seed": 2,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.86625
+  },
+  {
+   "agent": "goal",
+   "rows": 1,
+   "cols": 2,
+   "seed": 2,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.86625
+  },
+  {
+   "agent": "goal",
+   "rows": 3,
+   "cols": 3,
+   "seed": 0,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.4691666666666667
+  },
+  {
+   "agent": "goal",
+   "rows": 3,
+   "cols": 3,
+   "seed": 0,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.5241666666666667
+  },
+  {
+   "agent": "goal",
+   "rows": 3,
+   "cols": 3,
+   "seed": 1,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.5411111111111111
+  },
+  {
+   "agent": "goal",
+   "rows": 3,
+   "cols": 3,
+   "seed": 1,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.5075
+  },
+  {
+   "agent": "goal",
+   "rows": 3,
+   "cols": 3,
+   "seed": 2,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.4911111111111111
+  },
+  {
+   "agent": "goal",
+   "rows": 3,
+   "cols": 3,
+   "seed": 2,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.5863888888888888
+  },
+  {
+   "agent": "goal",
+   "rows": 4,
+   "cols": 5,
+   "seed": 0,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.235125
+  },
+  {
+   "agent": "goal",
+   "rows": 4,
+   "cols": 5,
+   "seed": 0,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.280125
+  },
+  {
+   "agent": "goal",
+   "rows": 4,
+   "cols": 5,
+   "seed": 1,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.275375
+  },
+  {
+   "agent": "goal",
+   "rows": 4,
+   "cols": 5,
+   "seed": 1,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.25125
+  },
+  {
+   "agent": "goal",
+   "rows": 4,
+   "cols": 5,
+   "seed": 2,
+   "mode": "independent",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.257625
+  },
+  {
+   "agent": "goal",
+   "rows": 4,
+   "cols": 5,
+   "seed": 2,
+   "mode": "common",
+   "steps": 400,
+   "dirt_every": 4,
+   "value": 0.2695
+  }
+ ]
+}

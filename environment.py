@@ -258,3 +258,24 @@ class Environment:
                 self._statuses[room] = Status.DIRTY
                 newly_dirty.append(room)
         return newly_dirty
+
+    def apply_dirt_draws(self, draws):
+        """Önceden üretilmiş kirlenme denemelerini uygular (ajan karşılaştırması için).
+
+        ``draws`` her oda için bir sayıdır (oda sırasıyla, [0, 1) aralığında).
+        Temiz bir oda, kendi sayısı ``dirt_probability``'den küçükse kirlenir;
+        zaten kirli odaya deneme etkisizdir. Ortamın kendi rastgele üreteci
+        kullanılmaz, bu yüzden ``dirty_tick`` davranışı değişmez. Ajanın
+        konumu değişmez. Yeni kirlenen odaların listesini döndürür.
+        """
+        draws = list(draws)
+        if len(draws) != len(self.grid.rooms):
+            raise ValueError("Her oda için tam olarak bir kirlenme denemesi gerekir.")
+        if any(not 0.0 <= draw < 1.0 for draw in draws):
+            raise ValueError("Kirlenme denemeleri [0, 1) aralığında olmalıdır.")
+        newly_dirty = []
+        for room, draw in zip(self.grid.rooms, draws):
+            if self._statuses[room] is Status.CLEAN and draw < self.dirt_probability:
+                self._statuses[room] = Status.DIRTY
+                newly_dirty.append(room)
+        return newly_dirty
