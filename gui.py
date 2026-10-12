@@ -548,11 +548,13 @@ class VacuumApp:
         Süre simülasyonun kendi saatinden okunduğu için duraklamada durur,
         durdurulunca sabitlenir.
         """
-        self._clock_job = None
         if self.simulation is None or not self.simulation.is_running:
+            self._stop_clock()
             return
         self._update_status()
-        self._clock_job = self.root.after(CLOCK_REFRESH_MS, self._on_clock_tick)
+        # _start_clock bekleyen bir tetikleme varsa önce onu iptal eder; böylece
+        # hiçbir zaman sahipsiz (iptal edilemeyen) bir tetikleme kalmaz.
+        self._start_clock()
 
     def _read_step_ms(self):
         """Ayar alanını okur; geçersizse son geçerli değeri kullanır."""

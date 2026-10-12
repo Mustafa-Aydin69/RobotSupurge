@@ -897,6 +897,27 @@ class WindowTests(unittest.TestCase):
         self.assertLessEqual(app.dirt_timer.remaining_ms, dirt_due)
         self.assertEqual(app.simulation.step_count, 0)
 
+    def pending_clock_jobs(self):
+        jobs = 0
+        for job in self.root.tk.splitlist(self.root.tk.call("after", "info")):
+            script = self.root.tk.splitlist(self.root.tk.call("after", "info", job))[0]
+            jobs += "_on_clock_tick" in str(script)
+        return jobs
+
+    def test_clock_never_leaves_orphan_jobs(self):
+        """Tetikleme dışarıdan da çağrılsa en fazla bir süre tetiklemesi bekler; kapanışta hiç kalmaz."""
+        app = self.app
+        app.start()
+        self.assertEqual(self.pending_clock_jobs(), 1)
+        for _ in range(3):
+            app._on_clock_tick()
+        self.assertEqual(self.pending_clock_jobs(), 1)
+        app.toggle_pause()
+        self.assertEqual(self.pending_clock_jobs(), 0)
+        app.toggle_pause()
+        app.stop()
+        self.assertEqual(self.pending_clock_jobs(), 0)
+
     def test_log_is_capped_on_screen_but_complete_in_simulation(self):
         app = self.app
         app.start()
