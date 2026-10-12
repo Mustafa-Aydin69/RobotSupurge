@@ -384,6 +384,15 @@ class ModelSimulationTests(unittest.TestCase):
         self.assertEqual(set(snapshot.observations), perceived)
         self.assertLess(len(perceived), 36, "15 adımda 36 odanın hepsi bilinemez")
 
+    def test_believed_location_matches_environment_after_each_step(self):
+        sim = Simulation(seed=6, rows=4, cols=4, agent_type="model", clock=FakeClock())
+        sim.start()
+        for i in range(300):
+            sim.step()
+            self.assertEqual(sim.agent.model_snapshot().location, sim.environment.location)
+            if i % 3 == 0:
+                sim.dirty_tick()
+
     def test_model_matches_last_percept_of_each_room(self):
         sim = run_model_sim(3, steps=200)
         snapshot = sim.agent.model_snapshot()

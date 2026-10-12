@@ -108,7 +108,7 @@ class ModelSnapshot:
     """
 
     step: int
-    location: str
+    location: str        # ajanın bulunduğunu bildiği oda (algı veya başarılı hareket)
     observations: MappingProxyType
 
     def age_of(self, room):
@@ -145,7 +145,7 @@ class ModelBasedAgent:
         self._rng = rng if rng is not None else random.Random()
         self._memory = {}       # oda -> Observation
         self._step = 0          # ajanın aldığı algı sayısı
-        self._location = None   # son algıdaki oda
+        self._location = None   # ajanın bulunduğunu bildiği oda
         self._pending = None    # sonucu beklenen eylem: (oda, eylem)
 
     @property
@@ -168,8 +168,10 @@ class ModelBasedAgent:
     def action_result(self, action, succeeded):
         """Eylem sonucunu modele işler.
 
-        Yalnızca başarılı bir Temizle eyleminden sonra oda "temiz (çıkarım)"
-        olarak kaydedilir. Başarısız eylemden hiçbir çıkarım yapılmaz.
+        * Başarılı Temizle: oda "temiz (çıkarım)" olarak kaydedilir.
+        * Başarılı hareket: ajan kendi konumunu hedef oda olarak günceller;
+          hedef odanın temiz/kirli durumu hakkında hiçbir bilgi eklenmez.
+        * Başarısız eylem: hiçbir çıkarım yapılmaz.
         """
         pending, self._pending = self._pending, None
         if pending is None or pending[1] is not action or not succeeded:
@@ -177,6 +179,8 @@ class ModelBasedAgent:
         room, _ = pending
         if action is Action.CLEAN:
             self._memory[room] = Observation(Status.CLEAN, self._step, SOURCE_INFERENCE)
+        else:
+            self._location = self._grid.neighbor(room, action)
 
     # ------------------------------------------------------------------
     # Model güncelleme

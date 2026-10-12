@@ -105,6 +105,21 @@ class InferenceTests(unittest.TestCase):
         target = agent.grid.neighbor("B2", action)
         self.assertNotIn(target, agent.model_snapshot().observations)
 
+    def test_successful_move_updates_believed_location_only(self):
+        agent = make_agent()
+        action = agent.act(("B2", CLEAN))
+        self.assertEqual(agent.model_snapshot().location, "B2")
+        agent.action_result(action, succeeded=True)
+        snap = agent.model_snapshot()
+        self.assertEqual(snap.location, agent.grid.neighbor("B2", action))
+        self.assertEqual(set(snap.observations), {"B2"})
+
+    def test_failed_move_keeps_believed_location(self):
+        agent = make_agent()
+        action = agent.act(("B2", CLEAN))
+        agent.action_result(action, succeeded=False)
+        self.assertEqual(agent.model_snapshot().location, "B2")
+
     def test_next_percept_confirms_inference(self):
         agent = make_agent()
         step(agent, "B2", DIRTY)
