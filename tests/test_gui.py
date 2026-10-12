@@ -10,8 +10,14 @@ import unittest
 from unittest import mock
 
 from environment import Action, Status
+from types import MappingProxyType
+
+from agents import SOURCE_INFERENCE, SOURCE_PERCEPT, ModelSnapshot, Observation
+from environment import Grid
 from gui import (
-    PausableTimer, VacuumApp, compute_layout, format_elapsed, format_record, parse_grid_size, parse_seed,
+    MODEL_CLEAN, MODEL_DIRTY, MODEL_INFERRED, MODEL_PANEL_TITLE, MODEL_STALE, MODEL_UNKNOWN,
+    PausableTimer, VacuumApp, compute_layout, format_elapsed, format_record, model_category,
+    parse_grid_size, parse_seed, stale_threshold,
 )
 from simulation import DirtRecord, SimulationState, StepRecord
 
@@ -79,6 +85,25 @@ class GridSettingTests(unittest.TestCase):
     def test_1x2_layout_matches_phase1_look(self):
         # Faz 1'deki 560×240 tuvalde 20 px boşluk ve 250×200 odalar.
         self.assertEqual(compute_layout(560, 240, 1, 2), (20.0, 20.0, 250.0, 200.0, 20.0))
+
+
+class ModelCategoryTests(unittest.TestCase):
+    def test_stale_threshold_depends_on_room_count(self):
+        self.assertEqual(stale_threshold(Grid(1, 2)), 4)
+        self.assertEqual(stale_threshold(Grid(2, 2)), 4)
+        self.assertEqual(stale_threshold(Grid(3, 4)), 12)
+        self.assertEqual(stale_threshold(Grid(6, 6)), 36)
+
+    def test_categories(self):
+        clean = Observation(Status.CLEAN, 10, SOURCE_PERCEPT)
+        inferred = Observation(Status.CLEAN, 10, SOURCE_INFERENCE)
+        dirty = Observation(Status.DIRTY, 10, SOURCE_PERCEPT)
+        self.assertEqual(model_category(None, None, 4), MODEL_UNKNOWN)
+        self.assertEqual(model_category(clean, 3, 4), MODEL_CLEAN)
+        self.assertEqual(model_category(inferred, 0, 4), MODEL_INFERRED)
+        self.assertEqual(model_category(clean, 4, 4), MODEL_STALE)
+        self.assertEqual(model_category(inferred, 9, 4), MODEL_STALE)
+        self.assertEqual(model_category(dirty, 50, 4), MODEL_DIRTY)
 
 
 class FakeScheduler:
@@ -470,6 +495,121 @@ class WindowTests(unittest.TestCase):
         self.assertEqual(str(app.agent_combo["state"]), "disabled")
         app.stop()
         self.assertEqual(str(app.agent_combo["state"]), "readonly")
+
+    def model_categories(self):
+        result = {}
+        for item in self.app.model_canvas.find_withtag("model-room"):
+            tags = self.app.model_canvas.gettags(item)
+            room = next(t for t in tags if t.startswith("model:"))[6:]
+            result[room] = next(t for t in tags if t.startswith("category:"))[9:]
+        return result
+
+    def test_model_panel_only_for_model_agent(self):
+        app = self.app
+        self.root.update()
+        self.assertEqual(app.model_frame.winfo_manager(), "")       # refleks: gizli
+        app.agent_var.set("Model Tabanlı Ajan")
+        self.root.update()
+        self.assertEqual(app.model_frame.winfo_manager(), "grid")   # önizlemede görünür
+        self.assertEqual(app.model_frame["text"], MODEL_PANEL_TITLE)
+        app.agent_var.set("Basit Refleks Ajan")
+        self.root.update()
+        self.assertEqual(app.model_frame.winfo_manager(), "")
+
+    def test_model_panel_starts_unknown_and_follows_snapshot(self):
+        app = self.app
+        app.agent_var.set("Model Tabanlı Ajan")
+        app.rows_var.set("4")
+        app.cols_var.set("4")
+        self.root.update()
+        self.assertEqual(set(self.model_categories().values()), {MODEL_UNKNOWN})
+        self.assertEqual(len(self.model_categories()), 16)
+
+        app.start()
+        self.pump(1.0)
+        app.toggle_pause()
+        app._draw()
+        snapshot = app.simulation.agent.model_snapshot()
+        categories = self.model_categories()
+        unknown = {room for room, cat in categories.items() if cat == MODEL_UNKNOWN}
+        self.assertEqual(unknown, set(app.simulation.environment.rooms) - set(snapshot.observations))
+        self.assertTrue(unknown, "1 saniyede 16 odanın hepsi bilinmemeli")
+        location_items = app.model_canvas.find_withtag("model-agent")
+        self.assertEqual(len(location_items), 1)
+
+    def test_model_panel_draws_only_from_snapshot(self):
+        """Panel ortamı okumaz: ortamdan bağımsız sahte bir model kopyası çizilebilir."""
+        app = self.app
+        grid = Grid(2, 2)
+        snapshot = ModelSnapshot(10, "A1", MappingProxyType({
+            "A1": Observation(Status.CLEAN, 10, SOURCE_INFERENCE),
+            "A2": Observation(Status.CLEAN, 2, SOURCE_PERCEPT),
+            "B1": Observation(Status.DIRTY, 9, SOURCE_PERCEPT),
+        }))
+        app._draw_model(grid, snapshot)
+        self.assertEqual(self.model_categories(), {
+            "A1": MODEL_INFERRED, "A2": MODEL_STALE, "B1": MODEL_DIRTY, "B2": MODEL_UNKNOWN,
+        })
+
+    def test_gui_cannot_modify_agent_memory(self):
+        app = self.app
+        app.agent_var.set("Model Tabanlı Ajan")
+        app.rows_var.set("3")
+        app.cols_var.set("3")
+        app.start()
+        self.pump(0.5)
+        app.toggle_pause()
+        agent = app.simulation.agent
+        before = dict(agent.model_snapshot().observations)
+        snapshot = app._displayed_snapshot(app.simulation.environment)
+        self.assertIsNot(snapshot.observations, agent._memory)
+        with self.assertRaises(TypeError):
+            snapshot.observations["A1"] = None
+        app._draw()
+        self.assertEqual(dict(agent.model_snapshot().observations), before)
+
+    def test_two_room_note_only_for_model_in_1x2(self):
+        app = self.app
+        app.agent_var.set("Model Tabanlı Ajan")
+        self.root.update()
+        self.assertEqual(app.model_note.winfo_manager(), "pack")
+        app.rows_var.set("2")
+        self.root.update()
+        self.assertEqual(app.model_note.winfo_manager(), "")
+
+    def test_panels_side_by_side_or_stacked(self):
+        app = self.app
+        self.root.deiconify()
+        app.agent_var.set("Model Tabanlı Ajan")
+        app.rows_var.set("3")
+        app.cols_var.set("3")
+        app.start()
+        self.root.geometry("1100x760")
+        self.root.update()
+        self.assertEqual(int(app.model_frame.grid_info()["column"]), 1)
+        self.root.geometry("700x1000")
+        self.root.update()
+        self.assertEqual(int(app.model_frame.grid_info()["row"]), 1)
+        self.assertEqual(int(app.model_frame.grid_info()["column"]), 0)
+        self.assertTrue(app.start_button.winfo_ismapped())
+        self.assertTrue(app.log_text.winfo_ismapped())
+
+    def test_status_line_is_shown_at_startup(self):
+        self.assertIn("Hazır", self.app.status_var.get())
+
+    def test_real_panel_uses_full_width_without_model(self):
+        app = self.app
+        self.root.deiconify()
+        self.root.geometry("900x760")
+        self.root.update()
+        board_width = app.board.winfo_width()
+        self.assertGreater(app.env_frame.winfo_width(), board_width * 0.95)
+        app.agent_var.set("Model Tabanlı Ajan")
+        self.root.update()
+        self.assertLess(app.env_frame.winfo_width(), board_width * 0.8)
+        app.agent_var.set("Basit Refleks Ajan")
+        self.root.update()
+        self.assertGreater(app.env_frame.winfo_width(), board_width * 0.95)
 
     def test_invalid_interval_falls_back_to_last_valid(self):
         self.app.step_var.set("abc")

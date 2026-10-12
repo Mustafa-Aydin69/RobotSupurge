@@ -14,7 +14,9 @@ import time
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from agents import AGENT_TYPES, DEFAULT_AGENT_TYPE
+from agents import AGENT_TYPES, DEFAULT_AGENT_TYPE, SOURCE_INFERENCE, ModelSnapshot
+from types import MappingProxyType
+
 from environment import MAX_GRID_SIZE, MIN_GRID_SIZE, Action, Grid, Status
 from simulation import DirtRecord, Simulation, SimulationState
 
@@ -50,6 +52,34 @@ COLOR_DIRT_SPOT = "#7a5230"
 COLOR_ROBOT = "#2f3e4e"
 COLOR_ROBOT_RING = "#5fa8d3"
 COLOR_ACTIVE_BORDER = "#1d70b8"
+
+# İç model paneli renkleri
+COLOR_MODEL_UNKNOWN = "#e2e2e2"
+COLOR_MODEL_STALE = "#f2e3a0"
+
+# İç model kategorileri ve ekrandaki adları
+MODEL_UNKNOWN, MODEL_CLEAN, MODEL_INFERRED, MODEL_STALE, MODEL_DIRTY = (
+    "unknown", "clean", "inferred", "stale", "dirty",
+)
+MODEL_CATEGORY_TEXT = {
+    MODEL_UNKNOWN: "?",
+    MODEL_CLEAN: "Temiz",
+    MODEL_INFERRED: "Çıkarım",
+    MODEL_STALE: "Eskimiş",
+    MODEL_DIRTY: "Kirli",
+}
+MODEL_CATEGORY_FILL = {
+    MODEL_UNKNOWN: COLOR_MODEL_UNKNOWN,
+    MODEL_CLEAN: COLOR_CLEAN,
+    MODEL_INFERRED: COLOR_CLEAN,
+    MODEL_STALE: COLOR_MODEL_STALE,
+    MODEL_DIRTY: COLOR_DIRTY,
+}
+MODEL_PANEL_TITLE = "Ajanın iç modeli (gerçek durum değil)"
+TWO_ROOM_MODEL_NOTE = (
+    "Not: 1×2 ortamda her odadan yalnızca bir geçerli hareket olduğu için model tabanlı "
+    "ajanın hareketleri refleks ajanla aynı olabilir. Fark iç modelde görülür."
+)
 
 # Kirli odadaki lekelerin oda içindeki göreli konumları (x, y, yarıçap)
 DIRT_SPOTS = [(0.18, 0.30, 9), (0.70, 0.22, 7), (0.32, 0.72, 11), (0.82, 0.66, 8), (0.55, 0.45, 6)]
@@ -109,6 +139,32 @@ def compute_layout(width, height, rows, cols):
     grid_w = cols * cell_w + (cols - 1) * gap
     grid_h = rows * cell_h + (rows - 1) * gap
     return (width - grid_w) / 2, (height - grid_h) / 2, cell_w, cell_h, gap
+
+
+def stale_threshold(grid):
+    """Bilginin arayüzde "eskimiş" gösterileceği yaş (ajan adımı).
+
+    Yalnızca görselleştirme içindir; ajanın kararlarını etkilemez.
+    """
+    return max(4, grid.rows * grid.cols)
+
+
+def model_category(observation, age, threshold):
+    """İç modeldeki bir odanın gösterim kategorisi."""
+    if observation is None:
+        return MODEL_UNKNOWN
+    if observation.status is Status.DIRTY:
+        return MODEL_DIRTY
+    if age >= threshold:
+        return MODEL_STALE
+    if observation.source == SOURCE_INFERENCE:
+        return MODEL_INFERRED
+    return MODEL_CLEAN
+
+
+def empty_snapshot():
+    """Simülasyon başlamadan önce gösterilen boş model (her oda bilinmiyor)."""
+    return ModelSnapshot(0, None, MappingProxyType({}))
 
 
 class PausableTimer:
@@ -219,8 +275,7 @@ class VacuumApp:
         root.bind("<space>", self._on_space_key)
         root.bind("<Escape>", self._on_escape_key)
 
-        self._update_buttons()
-        self._draw()
+        self._refresh()
 
     # ------------------------------------------------------------------
     # Arayüz bileşenleri
@@ -298,13 +353,72 @@ class VacuumApp:
         )
 
     def _build_canvas(self):
+        # Gerçek ortam ve iç model iki ayrı panelde. Geniş alanda yan yana,
+        # dar ve uzun alanda alt alta yerleştirilir.
+        self.board = ttk.Frame(self.root)
+        self.board.grid(row=2, column=0, sticky="nsew", padx=10, pady=4)
+        self._board_layout = None   # (model görünür mü, yan yana mı)
+
+        self.env_frame = ttk.LabelFrame(self.board, text="Gerçek ortam", padding=2)
         self.canvas = tk.Canvas(
-            self.root, width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT,
+            self.env_frame, width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT,
             background="white", highlightthickness=0,
         )
-        self.canvas.grid(row=2, column=0, sticky="nsew", padx=10, pady=4)
-        # Pencere yeniden boyutlandırıldığında grid yeniden hesaplanır.
+        self.canvas.pack(fill="both", expand=True)
+
+        self.model_frame = ttk.LabelFrame(self.board, text=MODEL_PANEL_TITLE, padding=2)
+        self.model_canvas = tk.Canvas(
+            self.model_frame, width=self.CANVAS_WIDTH // 2, height=self.CANVAS_HEIGHT,
+            background="white", highlightthickness=0,
+        )
+        self.model_legend_var = tk.StringVar()
+        self.model_legend = ttk.Label(self.model_frame, textvariable=self.model_legend_var,
+                                      foreground="#555", font=("Segoe UI", 8))
+        self.model_note = ttk.Label(self.model_frame, text=TWO_ROOM_MODEL_NOTE,
+                                    foreground="#9a5b13", font=("Segoe UI", 8))
+        for label in (self.model_legend, self.model_note):
+            label.bind("<Configure>", lambda e, w=label: w.configure(wraplength=max(120, e.width - 4)))
+        self.model_legend.pack(side="bottom", fill="x")
+        self.model_canvas.pack(side="top", fill="both", expand=True)
+
+        self.env_frame.grid(row=0, column=0, sticky="nsew")
+        self.model_frame.grid(row=0, column=1, sticky="nsew", padx=(8, 0))
+        self.model_frame.grid_remove()
+
+        # Pencere yeniden boyutlandırıldığında yerleşim ve grid yeniden hesaplanır.
+        self.board.bind("<Configure>", lambda _event: self._layout_board())
         self.canvas.bind("<Configure>", lambda _event: self._draw())
+        self.model_canvas.bind("<Configure>", lambda _event: self._draw())
+
+    def _layout_board(self):
+        """Panelleri yerleştirir.
+
+        Model paneli gizliyse gerçek ortam bütün alanı kullanır. Görünürse
+        tahtanın en-boy oranına göre yan yana ya da alt alta dizilir.
+        """
+        width, height = self.board.winfo_width(), self.board.winfo_height()
+        model_visible = self.model_frame.winfo_manager() == "grid"
+        side_by_side = width / max(height, 1) >= 1.6
+        layout = (model_visible, side_by_side)
+        if layout == self._board_layout:
+            return
+        self._board_layout = layout
+        for index in range(2):
+            self.board.columnconfigure(index, weight=0)
+            self.board.rowconfigure(index, weight=0)
+        if not model_visible:
+            self.board.columnconfigure(0, weight=1)
+            self.board.rowconfigure(0, weight=1)
+        elif side_by_side:
+            self.board.columnconfigure(0, weight=3)
+            self.board.columnconfigure(1, weight=2)
+            self.board.rowconfigure(0, weight=1)
+            self.model_frame.grid_configure(row=0, column=1, padx=(8, 0), pady=0)
+        else:
+            self.board.columnconfigure(0, weight=1)
+            self.board.rowconfigure(0, weight=3)
+            self.board.rowconfigure(1, weight=2)
+            self.model_frame.grid_configure(row=1, column=0, padx=0, pady=(6, 0))
 
     def _build_status(self):
         self.status_var = tk.StringVar()
@@ -522,39 +636,117 @@ class VacuumApp:
         last = ACTION_TEXT[self._last_action] if self._last_action else "—"
         env = sim.environment
         dirty = sum(1 for status in env.statuses().values() if status is Status.DIRTY)
+        known = ""
+        if sim.agent_type == "model":
+            known = f"Bilinen oda: {len(sim.agent.model_snapshot().observations)}/{len(env.rooms)}   |   "
         self.status_var.set(
             f"Durum: {sim.state.value}   |   {AGENT_TYPE_TEXT[sim.agent_type]}   |   "
             f"Ortam: {env.grid.rows}×{env.grid.cols}   |   "
-            f"Kirli oda: {dirty}/{len(env.rooms)}   |   Adım: {sim.step_count}   |   "
+            f"Kirli oda: {dirty}/{len(env.rooms)}   |   {known}Adım: {sim.step_count}   |   "
             f"Temizleme: {sim.clean_count}   |   Hareket: {sim.move_count}   |   "
             f"Süre: {format_elapsed(sim.elapsed)}   |   Son eylem: {last}"
         )
 
     def _displayed(self):
-        """Çizilecek grid ve (varsa) ortam.
+        """Çizilecek grid, ortam ve ajan türü: ``(grid, env, agent_type)``.
 
         Simülasyon çalışıyor ya da duraklatılmışsa onun ortamı çizilir. Aksi
-        halde ayarlardaki boyut önizlenir; durdurulmuş simülasyonun ortamı,
-        ayarlar değişmediyse son hâliyle ekranda kalır.
+        halde ayarlardaki boyut ve ajan türü önizlenir; durdurulmuş
+        simülasyonun ortamı, ayarlar değişmediyse son hâliyle ekranda kalır.
         """
         if self._is_active():
             env = self.simulation.environment
-            return env.grid, env
+            return env.grid, env, self.simulation.agent_type
+        agent_type = self.selected_agent_type()
         try:
             grid = Grid(*parse_grid_size(self.rows_var.get(), self.cols_var.get()))
         except ValueError:
             grid = Grid(DEFAULT_ROWS, DEFAULT_COLS)
-        if self.simulation is not None and self.simulation.environment.grid == grid:
-            return grid, self.simulation.environment
-        return grid, None
+        sim = self.simulation
+        if sim is not None and sim.environment.grid == grid and sim.agent_type == agent_type:
+            return grid, sim.environment, agent_type
+        return grid, None, agent_type
+
+    def _displayed_snapshot(self, env):
+        """Model panelinin kaynağı: yalnızca ajanın salt okunur model kopyası."""
+        if env is not None and self.simulation is not None and self.simulation.agent_type == "model":
+            return self.simulation.agent.model_snapshot()
+        return empty_snapshot()
 
     def _draw(self):
+        grid, env, agent_type = self._displayed()
+        self._draw_environment(grid, env)
+        show_model = agent_type == "model"
+        if show_model != (self.model_frame.winfo_manager() == "grid"):
+            if show_model:
+                self.model_frame.grid()
+            else:
+                self.model_frame.grid_remove()
+            self._layout_board()
+        if show_model:
+            if grid.is_two_room:
+                self.model_note.pack(side="bottom", fill="x", before=self.model_legend)
+            else:
+                self.model_note.pack_forget()
+            self._draw_model(grid, self._displayed_snapshot(env))
+
+    def _draw_model(self, grid, snapshot):
+        """İç modeli çizer. Yalnızca ``snapshot`` kullanılır; ortam okunmaz."""
+        c = self.model_canvas
+        c.delete("all")
+        width = c.winfo_width() if c.winfo_width() > 1 else self.CANVAS_WIDTH // 2
+        height = c.winfo_height() if c.winfo_height() > 1 else self.CANVAS_HEIGHT
+        threshold = stale_threshold(grid)
+        self.model_legend_var.set(
+            "Gri ?: bilinmiyor · Yeşil: temiz · Kesikli kenar: çıkarımla temiz · "
+            f"Sarı: eskimiş (yaş ≥ {threshold}) · Kahverengi: kirli. "
+            "Yaş, son bilgiden bu yana geçen ajan adımıdır; gerçek süre değildir."
+        )
+
+        left0, top0, cell_w, cell_h, gap = compute_layout(width, height, grid.rows, grid.cols)
+        size = min(cell_w, cell_h)
+        title_font = ("Segoe UI", max(7, min(12, int(size * 0.13))), "bold")
+        info_font = ("Segoe UI", max(7, min(10, int(size * 0.10))))
+        for room in grid.rooms:
+            row, col = grid.position_of(room)
+            left = left0 + col * (cell_w + gap)
+            top = top0 + row * (cell_h + gap)
+            right, bottom = left + cell_w, top + cell_h
+            observation = snapshot.observations.get(room)
+            age = snapshot.age_of(room)
+            category = model_category(observation, age, threshold)
+            is_current = snapshot.location == room
+
+            c.create_rectangle(
+                left, top, right, bottom, fill=MODEL_CATEGORY_FILL[category],
+                outline=COLOR_ACTIVE_BORDER if is_current else "#666",
+                width=3 if is_current else 1,
+                dash=(4, 3) if observation is not None and observation.source == SOURCE_INFERENCE else (),
+                tags=("model-room", f"model:{room}", f"category:{category}"),
+            )
+            center_x, center_y = (left + right) / 2, (top + bottom) / 2
+            c.create_text(center_x, top + max(8, size * 0.14), text=room, font=title_font)
+            if category == MODEL_UNKNOWN:
+                if size >= 24:
+                    c.create_text(center_x, center_y + size * 0.08, text="?", fill="#777",
+                                  font=("Segoe UI", max(8, int(size * 0.3)), "bold"))
+            else:
+                if size >= 50:
+                    c.create_text(center_x, center_y, text=MODEL_CATEGORY_TEXT[category], font=info_font)
+                if size >= 26:
+                    c.create_text(center_x, bottom - max(7, size * 0.14), text=f"yaş {age}", font=info_font)
+            if is_current:
+                # Ajanın kendi konum bilgisi: sağ üst köşede küçük işaret.
+                r = max(2.5, min(7.0, size * 0.07))
+                c.create_oval(right - 3 * r, top + r, right - r, top + 3 * r,
+                              fill=COLOR_ACTIVE_BORDER, outline="", tags=("model-agent",))
+
+    def _draw_environment(self, grid, env):
         c = self.canvas
         c.delete("all")
         width = c.winfo_width() if c.winfo_width() > 1 else self.CANVAS_WIDTH
         height = c.winfo_height() if c.winfo_height() > 1 else self.CANVAS_HEIGHT
 
-        grid, env = self._displayed()
         left0, top0, cell_w, cell_h, gap = compute_layout(width, height, grid.rows, grid.cols)
         size = min(cell_w, cell_h)
         title_font = ("Segoe UI", max(7, min(13, int(size * 0.14))), "bold")
