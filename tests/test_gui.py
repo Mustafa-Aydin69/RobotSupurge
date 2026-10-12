@@ -749,6 +749,52 @@ class WindowTests(unittest.TestCase):
         self.root.update()
         self.assertGreaterEqual(app.model_frame.winfo_width(), 290)
 
+    def test_goal_visualization_does_not_change_decisions(self):
+        """Her adımda hedef/rota çizilse de çizilmese de ajan aynı kararları verir."""
+        def run(draw):
+            app = self.start_goal(4, 4, seed="21")
+            app.step_timer.cancel()
+            app.dirt_timer.cancel()
+            for i in range(200):
+                app.simulation.step()
+                if i % 4 == 0:
+                    app.simulation.dirty_tick()
+                if draw:
+                    app._log_goal_change()
+                    app._draw()
+                    app._update_status()
+            log = [r.rooms if isinstance(r, DirtRecord) else (r.step, r.room, r.status, r.action)
+                   for r in app.simulation.log]
+            app.stop()
+            return log
+
+        self.assertEqual(run(draw=False), run(draw=True))
+
+    def test_goal_texts_do_not_present_score_as_probability(self):
+        app = self.start_goal()
+        self.pump(1.0)
+        app.toggle_pause()
+        texts = [line for line in self.log_lines() if line.startswith("Hedef")] + [app.status_var.get()]
+        self.assertTrue(texts)
+        for text in texts:
+            self.assertNotIn("olasılık", text)
+            self.assertNotIn("%", text)
+
+    def test_goal_view_readable_in_small_window(self):
+        app = self.start_goal(3, 4)
+        self.root.deiconify()
+        self.root.geometry("680x620")
+        self.pump(0.6)
+        app.toggle_pause()
+        app._draw()
+        self.root.update()
+        for widget in (app.start_button, app.pause_button, app.stop_button, app.log_text):
+            self.assertTrue(widget.winfo_ismapped())
+        self.assertEqual(len(app.model_canvas.find_withtag("plan-target")), 1)
+        x0, y0, x1, y1 = app.model_canvas.bbox("plan-target")
+        self.assertLessEqual(x1, app.model_canvas.winfo_width() + 2)
+        self.assertLessEqual(y1, app.model_canvas.winfo_height() + 2)
+
     def test_invalid_interval_falls_back_to_last_valid(self):
         self.app.step_var.set("abc")
         self.assertEqual(self.app._read_step_ms(), 700)

@@ -395,5 +395,98 @@ class GoalSimulationTests(unittest.TestCase):
                     self.assertEqual(visited, set(sim.environment.rooms))
 
 
+class Phase4AuditTests(unittest.TestCase):
+    """Faz 4 kapanış denetiminde eklenen testler."""
+
+    def test_new_target_on_arrival_is_the_one_choose_target_picks(self):
+        import copy
+
+        agent = corridor_agent()
+        step(agent, "A3", CLEAN)
+        step(agent, "A2", CLEAN)
+        # A1'e varış: yeni hedef, aynı model ve aynı rng durumunda choose_target'in seçtiğiyle aynı olmalı.
+        probe = copy.deepcopy(agent)
+        probe.update_model(("A1", CLEAN))
+        expected = probe.choose_target("A1")
+        step(agent, "A1", CLEAN)
+        plan = agent.plan_snapshot()
+        self.assertEqual((plan.reason, plan.target), (REPLAN_REACHED, expected))
+        self.assertEqual(plan.route, shortest_path(agent.grid, "A1", expected.room)[1:])
+
+    def test_exploration_tie_with_equal_distance_uses_seeded_choice(self):
+        """Eşit puan ve eşit mesafede seed'li seçim yalnızca eşit adaylar arasında yapılır.
+
+        Gerçek koşuda iki oda aynı adımda algılanamadığı için bu eşitlik doğal
+        olarak oluşmaz; test amaçlı model doğrudan kurulur.
+        """
+        chosen = set()
+        for seed in range(40):
+            agent = make_goal_agent(1, 3, seed)
+            agent.update_model(("A2", CLEAN))
+            agent._memory["A1"] = Observation(CLEAN, 0, SOURCE_PERCEPT)  # test amaçlı: eşit yaş
+            agent._memory["A3"] = Observation(CLEAN, 0, SOURCE_PERCEPT)
+            target = agent.choose_target("A2")
+            self.assertEqual((target.kind, target.distance, target.score), (GOAL_EXPLORE, 1, Fraction(2)))
+            chosen.add(target.room)
+        self.assertEqual(chosen, {"A1", "A3"})
+        same = {make_goal_agent(1, 3, 7) for _ in range(2)}
+        rooms = []
+        for agent in same:
+            agent.update_model(("A2", CLEAN))
+            agent._memory["A1"] = Observation(CLEAN, 0, SOURCE_PERCEPT)
+            agent._memory["A3"] = Observation(CLEAN, 0, SOURCE_PERCEPT)
+            rooms.append(agent.choose_target("A2").room)
+        self.assertEqual(rooms[0], rooms[1])
+
+    def test_score_is_heuristic_not_probability(self):
+        """Keşif puanı 1'den büyük olabilir; olasılık olarak kullanılmaz."""
+        agent = corridor_agent()
+        agent.update_model(("A3", CLEAN))
+        target = agent.choose_target("A3")
+        self.assertGreater(target.score, 1)
+        import agents
+        doc = agents.GoalBasedAgent.__doc__
+        self.assertIn("sezgisel", doc)
+        self.assertIn("kesin bir kirlenme olasılığı", doc)
+
+    def test_random_move_failures_never_corrupt_location_or_bounds(self):
+        """Ortam hareketleri rastgele reddettiğinde de konum çıkarımı doğru kalır.
+
+        Simülasyon başarısız eylemde hata yükseltir; test hatayı yakalayıp
+        devam eder. Ajanın bildiği konum her zaman gerçek konuma eşit kalmalı.
+        """
+        from simulation import Simulation
+
+        for rows, cols in [(1, 5), (3, 3), (4, 6)]:
+            sim = Simulation(seed=rows + cols, rows=rows, cols=cols, agent_type="goal", clock=lambda: 0.0)
+            sim.start()
+            real_execute = sim.environment.execute
+            failures = random.Random(99)
+
+            def flaky_execute(action, _real=real_execute, _rng=failures):
+                if action is not Action.CLEAN and _rng.random() < 0.2:
+                    raise ValueError("test: hareket reddedildi")
+                _real(action)
+
+            sim.environment.execute = flaky_execute
+            failed = 0
+            for i in range(1500):
+                try:
+                    sim.step()
+                except ValueError:
+                    failed += 1
+                    plan = sim.agent.plan_snapshot()
+                    self.assertEqual((plan.target, plan.route), (None, ()))
+                self.assertEqual(sim.agent.model_snapshot().location, sim.environment.location)
+                plan = sim.agent.plan_snapshot()
+                if plan.route:
+                    route_rooms(sim.environment.grid, plan.origin, plan.route)  # sınır içinde
+                if i % 4 == 0:
+                    sim.dirty_tick()
+            with self.subTest(grid=(rows, cols)):
+                self.assertGreater(failed, 50)
+                self.assertGreater(sim.step_count, 1000)
+
+
 if __name__ == "__main__":
     unittest.main()
