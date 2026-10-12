@@ -197,6 +197,11 @@ python -m tools.compare_agents
   biçimde her tetiklemede her oda için ajandan bağımsız bir sayı çekilir;
   bütün ajanlar aynı kirlenme denemeleri dizisiyle karşılaşır.
 
+Bu iki ölçüt farklı şeyleri ölçer: kapsama adımı, kirlenme yokken ortamın
+ne kadar hızlı tanındığını; temiz oda oranı ise sürekli kirlenme altında
+ortamın ne kadar temiz tutulabildiğini gösterir. Bir ajan birinde iyi,
+diğerinde ötekilerle aynı olabilir.
+
 Sonuçlar ölçüldüğü gibi raporlanır; testlerde herhangi bir ajanın
 üstünlüğü şart koşulmaz.
 
