@@ -106,6 +106,47 @@ class ModelCategoryTests(unittest.TestCase):
         self.assertEqual(model_category(dirty, 50, 4), MODEL_DIRTY)
 
 
+class DpiTests(unittest.TestCase):
+    def test_ui_scale_from_dpi(self):
+        from gui import ui_scale
+
+        class FakeRoot:
+            def __init__(self, dpi):
+                self.dpi = dpi
+
+            def winfo_fpixels(self, _distance):
+                return self.dpi
+
+        self.assertEqual(ui_scale(FakeRoot(96)), 1.0)
+        self.assertEqual(ui_scale(FakeRoot(144)), 1.5)
+        self.assertEqual(ui_scale(FakeRoot(72)), 1.0)     # küçültme yapılmaz
+
+    def test_dpi_awareness_call_is_safe(self):
+        from gui import enable_windows_dpi_awareness
+        self.assertIsInstance(enable_windows_dpi_awareness(), bool)
+
+    def test_canvas_fonts_use_pixels_matching_100_percent_points(self):
+        from views import _font
+        self.assertEqual(_font(13, "bold"), ("Segoe UI", -17, "bold"))
+        self.assertEqual(_font(7), ("Segoe UI", -9))
+
+    def test_window_sizes_scale_with_emulated_150_percent(self):
+        try:
+            root = tk.Tk()
+        except tk.TclError as exc:
+            self.skipTest(f"Ekran bulunamadı: {exc}")
+        try:
+            root.withdraw()
+            root.tk.call("tk", "scaling", 2.0)            # 144 DPI = %150 benzetimi
+            app = VacuumApp(root)
+            self.assertAlmostEqual(app.scale, 1.5, places=1)
+            min_w, min_h = root.minsize()
+            self.assertGreaterEqual(min_w, 1000)          # 680 * 1.5
+            self.assertGreaterEqual(min_h, min(900, int(root.winfo_screenheight() * 0.9)))
+        finally:
+            root.destroy()
+
+
 class FakeScheduler:
     """Tkinter'ın after/after_cancel arayüzünü sahte bir saatle taklit eder."""
 

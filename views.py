@@ -134,6 +134,16 @@ def _draw_hatch(canvas, left, top, right, bottom, spacing, tags):
         offset += spacing
 
 
+def _font(points, *style):
+    """Tuval yazı tipi; boyut piksel cinsinden verilir.
+
+    Değerler 96 DPI'daki punto karşılığıdır (1 punto = 4/3 piksel). Piksel
+    kullanılması, yüksek DPI ölçeklemede yazıların hücre boyutlarıyla orantılı
+    kalmasını sağlar; %100 ölçekte görünüm değişmez.
+    """
+    return ("Segoe UI", -max(1, round(points * 4 / 3)), *style)
+
+
 def _canvas_size(canvas, default_width, default_height):
     width = canvas.winfo_width() if canvas.winfo_width() > 1 else default_width
     height = canvas.winfo_height() if canvas.winfo_height() > 1 else default_height
@@ -151,8 +161,8 @@ def draw_model(canvas, grid, snapshot, plan, threshold, default_size):
 
     left0, top0, cell_w, cell_h, gap = compute_layout(width, height, grid.rows, grid.cols)
     size = min(cell_w, cell_h)
-    title_font = ("Segoe UI", max(7, min(12, int(size * 0.13))), "bold")
-    info_font = ("Segoe UI", max(7, min(10, int(size * 0.10))))
+    title_font = _font(max(7, min(12, int(size * 0.13))), "bold")
+    info_font = _font(max(7, min(10, int(size * 0.10))))
     for room in grid.rooms:
         row, col = grid.position_of(room)
         left = left0 + col * (cell_w + gap)
@@ -178,7 +188,7 @@ def draw_model(canvas, grid, snapshot, plan, threshold, default_size):
         if category == MODEL_UNKNOWN:
             if size >= 24:
                 c.create_text(center_x, center_y + size * 0.08, text="?", fill="#777",
-                              font=("Segoe UI", max(8, int(size * 0.3)), "bold"))
+                              font=_font(max(8, int(size * 0.3)), "bold"))
         else:
             if size >= 50:
                 c.create_text(center_x, center_y, text=MODEL_CATEGORY_TEXT[category], font=info_font)
@@ -229,8 +239,8 @@ def draw_environment(canvas, grid, env, plan, default_size):
 
     left0, top0, cell_w, cell_h, gap = compute_layout(width, height, grid.rows, grid.cols)
     size = min(cell_w, cell_h)
-    title_font = ("Segoe UI", max(7, min(13, int(size * 0.14))), "bold")
-    status_font = ("Segoe UI", max(7, min(11, int(size * 0.11))))
+    title_font = _font(max(7, min(13, int(size * 0.14))), "bold")
+    status_font = _font(max(7, min(11, int(size * 0.11))))
     border = 2 if size >= 50 else 1
     title_y = max(9, size * 0.09)
 
@@ -268,7 +278,7 @@ def draw_environment(canvas, grid, env, plan, default_size):
             # Küçük hücrede durum yazısı sığmaz: sağ alt köşede T (temiz) / K (kirli).
             mark = "T" if status is Status.CLEAN else "K"
             c.create_text(right - 3, bottom - 2, text=mark, anchor="se",
-                          font=("Segoe UI", max(7, int(size * 0.16)), "bold"),
+                          font=_font(max(7, int(size * 0.16)), "bold"),
                           tags=("status-mark", f"mark:{room}:{mark}"))
 
         if plan is not None and plan.target is not None and plan.target.room == room:
@@ -295,4 +305,4 @@ def draw_robot(canvas, x, y, size):
                   fill=COLOR_ROBOT_RING, outline="", tags=("robot",))
     if r >= 18:
         c.create_text(x, y + r * 0.27, text="Robot", fill="white",
-                      font=("Segoe UI", max(7, int(r * 0.3)), "bold"), tags=("robot",))
+                      font=_font(max(7, int(r * 0.3)), "bold"), tags=("robot",))

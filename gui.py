@@ -12,6 +12,7 @@ Zamanlayıcılar duraklatıldığında kalan sürelerini korur ve devam edildiğ
 o süreden devam eder.
 """
 
+import sys
 import tkinter as tk
 from tkinter import messagebox, ttk
 
@@ -124,6 +125,31 @@ def format_goal_change(plan):
     return f"Hedef     | {target.room} ({detail}) — {plan.reason}"
 
 
+def enable_windows_dpi_awareness():
+    """Windows'ta yüksek DPI ekranlarda bulanık görüntüyü önler.
+
+    Pencere oluşturulmadan önce çağrılmalıdır. Başarılı olursa True döner;
+    diğer işletim sistemlerinde ya da hata durumunda hiçbir şey yapmaz.
+    """
+    if sys.platform != "win32":
+        return False
+    try:
+        import ctypes
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)   # sistem DPI farkındalığı
+        return True
+    except (AttributeError, OSError):
+        try:
+            import ctypes
+            return bool(ctypes.windll.user32.SetProcessDPIAware())
+        except (AttributeError, OSError):
+            return False
+
+
+def ui_scale(root):
+    """Ekran ölçeği: %100 -> 1.0, %150 -> 1.5 (en az 1.0)."""
+    return max(1.0, root.winfo_fpixels("1i") / 96.0)
+
+
 class VacuumApp:
     """Robot süpürge simülasyonunun ana penceresi."""
 
@@ -143,8 +169,12 @@ class VacuumApp:
         self._log_trimmed = 0           # ekrandan kaldırılan günlük satırı sayısı
 
         root.title("Robot Süpürge Ajanı")
-        root.geometry("820x800")
-        root.minsize(680, 620)
+        # Piksel cinsinden boyutlar ekran ölçeğiyle büyütülür; ekrana sığmayacaksa sınırlanır.
+        self.scale = ui_scale(root)
+        width = min(round(820 * self.scale), int(root.winfo_screenwidth() * 0.95))
+        height = min(round(800 * self.scale), int(root.winfo_screenheight() * 0.90))
+        root.geometry(f"{width}x{height}")
+        root.minsize(min(round(680 * self.scale), width), min(round(620 * self.scale), height))
         root.protocol("WM_DELETE_WINDOW", self.on_close)
 
         self._build_settings()
@@ -303,7 +333,7 @@ class VacuumApp:
         elif side_by_side:
             self.board.columnconfigure(0, weight=3)
             # Panel başlığı dar pencerede de tam okunabilsin.
-            self.board.columnconfigure(1, weight=2, minsize=300)
+            self.board.columnconfigure(1, weight=2, minsize=round(300 * self.scale))
             self.board.rowconfigure(0, weight=1)
             self.model_frame.grid_configure(row=0, column=1, padx=(8, 0), pady=0)
         else:
@@ -676,6 +706,7 @@ class VacuumApp:
 
 
 def run():
+    enable_windows_dpi_awareness()
     root = tk.Tk()
     VacuumApp(root)
     root.mainloop()
