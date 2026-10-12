@@ -230,5 +230,83 @@ class MoveStrategyTests(unittest.TestCase):
         self.assertEqual([step(agent, r, CLEAN) for r in ("A", "B", "A", "B")], [R, L, R, L])
 
 
+ALL_GRID_SIZES = [(r, c) for r in range(1, 7) for c in range(1, 7) if r * c >= 2]
+
+
+class LongRunTests(unittest.TestCase):
+    def test_long_runs_stay_in_bounds_with_consistent_model(self):
+        """35 grid boyutunda kirlenmeli 2000 adımlık koşular."""
+        from simulation import Simulation
+
+        for rows, cols in ALL_GRID_SIZES:
+            sim = Simulation(seed=rows * 7 + cols, rows=rows, cols=cols, agent_type="model", clock=lambda: 0.0)
+            sim.start()
+            rooms = set(sim.environment.rooms)
+            for i in range(2000):
+                sim.step()  # sınır dışı bir hareket ValueError fırlatırdı
+                if i % 4 == 0:
+                    sim.dirty_tick()
+            snap = sim.agent.model_snapshot()
+            with self.subTest(grid=(rows, cols)):
+                self.assertIn(sim.environment.location, rooms)
+                self.assertLessEqual(set(snap.observations), rooms)
+                self.assertEqual(snap.step, 2000)
+                self.assertTrue(all(snap.age_of(room) >= 0 for room in snap.observations))
+
+    def test_all_rooms_visited_in_dirt_free_runs(self):
+        """Ölçüm: kirlenme kapalıyken bu seed'lerde her oda ziyaret edildi.
+
+        Bu her koşul için kanıtlanmış bir garanti değildir; yalnızca test edilen
+        boyut ve seed'ler için gözlenen bir sonuçtur.
+        """
+        from simulation import Simulation
+
+        for rows, cols in [(1, 6), (3, 3), (4, 4), (6, 6)]:
+            for seed in range(10):
+                sim = Simulation(seed=seed, rows=rows, cols=cols, agent_type="model",
+                                 dirt_probability=0.0, clock=lambda: 0.0)
+                sim.start()
+                visited = {sim.step().room for _ in range(50 * rows * cols)}
+                with self.subTest(grid=(rows, cols), seed=seed):
+                    self.assertEqual(visited, set(sim.environment.rooms))
+
+
+class DifferenceFromReflexTests(unittest.TestCase):
+    """Aynı durumda refleks ve model tabanlı ajanların davranış farkı."""
+
+    def test_corridor_middle_after_coming_from_left(self):
+        from agents import ReflexAgent
+
+        # Model tabanlı ajan A1'i bilir, A3'ü bilmez: A2'de her zaman sağa gider.
+        model = make_agent(1, 3)
+        step(model, "A1", CLEAN)
+        self.assertEqual({decide(model, "A2", seed) for seed in range(30)}, {R})
+
+        # Refleks ajan geçmişi kullanmaz: aynı algıda iki yönü de seçebilir.
+        reflex_choices = {
+            ReflexAgent(grid=Grid(1, 3), rng=random.Random(seed)).act(("A2", CLEAN)) for seed in range(30)
+        }
+        self.assertEqual(reflex_choices, {L, R})
+
+    def test_model_agent_never_skips_an_unknown_neighbor(self):
+        """Uzun koşu boyunca: bilinmeyen komşu varken bilinen bir komşuya gidilmez."""
+        from simulation import Simulation
+
+        sim = Simulation(seed=4, rows=5, cols=5, agent_type="model", clock=lambda: 0.0)
+        sim.start()
+        grid = sim.environment.grid
+        for i in range(1500):
+            known = set(sim.agent.model_snapshot().observations)
+            room = sim.environment.location
+            record = sim.step()
+            if record.action is not Action.CLEAN:
+                neighbors = {grid.neighbor(room, m) for m in grid.valid_moves(room)}
+                target = grid.neighbor(room, record.action)
+                if neighbors - known - {room}:
+                    self.assertNotIn(target, known, f"adım {record.step}")
+            if i % 4 == 0:
+                sim.dirty_tick()
+
+
 if __name__ == "__main__":
     unittest.main()
