@@ -329,3 +329,41 @@ def _configure_custom_styles(style, scale):
                     background=card, fieldbackground=card, bordercolor=c["border"])
     style.configure("Log.Treeview.Heading", font=font("caption", "bold"), background=c["heading_bg"],
                     foreground=c["text"], relief="flat", padding=(6, 4))
+
+
+# ----------------------------------------------------------------------
+# Ortak bileşenler
+# ----------------------------------------------------------------------
+def px(value, scale=1.0):
+    """%100 ölçekteki piksel değerini ekran ölçeğine çevirir."""
+    return round(value * scale)
+
+
+def card(parent, padding, scale=1.0):
+    """Beyaz, ince kenarlıklı kart. ``(dış çerçeve, iç alan)`` döndürür.
+
+    Dış çerçeve yerleştirilir (grid/pack), bileşenler iç alana konur.
+    """
+    import tkinter as tk
+    from tkinter import ttk
+
+    outer = tk.Frame(parent, background=COLORS["card"], highlightthickness=1, bd=0,
+                     highlightbackground=COLORS["border"], highlightcolor=COLORS["border"])
+    body = ttk.Frame(outer, style="Card.TFrame", padding=px(padding, scale))
+    body.pack(fill="both", expand=True)
+    return outer, body
+
+
+def icon_label(parent, name, background, size=13, foreground=None):
+    """Simge yazı tipiyle simge etiketi; simge yazı tipi yoksa ``None``."""
+    import tkinter as tk
+
+    root = parent.winfo_toplevel()
+    family = getattr(root, "_robot_icon_family", "?")
+    if family == "?":
+        family = icon_font_family(root)
+        root._robot_icon_family = family
+    if family is None:
+        return None
+    return tk.Label(parent, text=ICON_GLYPHS[name], font=(family, size), background=background,
+                    foreground=foreground or COLORS["primary"], borderwidth=0)

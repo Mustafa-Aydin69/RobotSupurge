@@ -294,6 +294,20 @@ def draw_environment(canvas, grid, env, plan, default_size):
             draw_robot(c, (left + right) / 2, (top + bottom) / 2 + size * offset, size)
 
 
+def draw_logo(canvas, size, background):
+    """Başlıktaki robot süpürge simgesi (yandan görünüş)."""
+    c = canvas
+    c.delete("all")
+    c.configure(background=background)
+    s = size / 56
+    # gövde, üst kapak, ön tampon ve algılayıcı
+    c.create_oval(4 * s, 24 * s, 52 * s, 50 * s, fill="#c5d3e3", outline="#2f3e4e", width=max(1, round(2 * s)))
+    c.create_oval(4 * s, 14 * s, 52 * s, 42 * s, fill=COLOR_ROBOT, outline="#2f3e4e", width=max(1, round(2 * s)))
+    c.create_oval(14 * s, 18 * s, 42 * s, 34 * s, fill="#4a5d72", outline="")
+    c.create_oval(24 * s, 21 * s, 32 * s, 27 * s, fill=COLOR_ROBOT_RING, outline="")
+    c.create_line(10 * s, 46 * s, 46 * s, 46 * s, fill="#2f3e4e", width=max(1, round(2 * s)))
+
+
 def draw_robot(canvas, x, y, size):
     c = canvas
     r = max(6.0, min(30.0, size * 0.22))

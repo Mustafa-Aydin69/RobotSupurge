@@ -324,7 +324,7 @@ class WindowTests(unittest.TestCase):
         # Duraklat: zamanlayıcılar durur, durum korunur.
         app.toggle_pause()
         self.assertIs(app.simulation.state, SimulationState.PAUSED)
-        self.assertEqual(app.pause_button["text"], "Devam")
+        self.assertTrue(app.pause_button["text"].endswith("Devam"))      # simge + metin
         self.assertFalse(app.step_timer.is_pending)
         self.assertFalse(app.dirt_timer.is_pending)
         self.pump(0.5)
@@ -436,8 +436,8 @@ class WindowTests(unittest.TestCase):
     def test_space_in_text_field_is_not_a_shortcut(self):
         app = self.app
         app.start()
-        entry = [w for w in app.root.winfo_children()[0].winfo_children() if isinstance(w, ttk.Entry)][0]
-        app._on_space_key(type("Event", (), {"widget": entry})())
+        for entry in (app.seed_entry, app.rows_spin, app.agent_combo):
+            app._on_space_key(type("Event", (), {"widget": entry})())
         self.assertIs(app.simulation.state, SimulationState.RUNNING)
 
     def room_items(self):

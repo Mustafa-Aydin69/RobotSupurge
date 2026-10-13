@@ -80,7 +80,7 @@ class CompareWindowTests(unittest.TestCase):
         first = self.app.open_comparison()
         second = self.app.open_comparison()
         self.assertIs(first, second)
-        self.assertEqual(str(self.app.compare_button["text"]), "Ajanları Karşılaştır")
+        self.assertTrue(str(self.app.compare_button["text"]).endswith("Ajanları Karşılaştır"))
 
     def test_full_comparison_fills_table_and_chart(self):
         window = self.open_small()

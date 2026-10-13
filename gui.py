@@ -24,7 +24,7 @@ from timers import PausableTimer  # noqa: F401  (testler ve geriye uyumluluk iç
 from views import (  # noqa: F401  (testler ve geriye uyumluluk için dışa aktarılır)
     COLOR_GOAL, MODEL_CATEGORY_FILL, MODEL_CATEGORY_TEXT, MODEL_CLEAN, MODEL_DIRTY, MODEL_INFERRED,
     MODEL_PANEL_TITLE, MODEL_STALE, MODEL_UNKNOWN, STATUS_TEXT, compute_layout, draw_environment,
-    draw_model, empty_snapshot, environment_legend_text, model_category, model_legend_text,
+    draw_logo, draw_model, empty_snapshot, environment_legend_text, model_category, model_legend_text,
     stale_threshold,
 )
 
@@ -60,6 +60,14 @@ GOAL_KIND_TEXT = {
     GOAL_UNKNOWN: "bilinmeyen oda",
     GOAL_EXPLORE: "keşif",
 }
+
+APP_TITLE = "Robot Süpürge Ajanı"
+APP_SUBTITLE = "Yapay zekâ ajanlarının ortamı algılama ve temizlik davranışlarını simüle edin."
+SETTINGS_NOTE = ("Aralıklar çalışırken de değiştirilebilir. Satır/sütun (1–6, en az 2 oda) "
+                 "ve ajan türü yalnızca Başlat'ta uygulanır.")
+SEED_PLACEHOLDER = "örn. 42"
+SHORTCUTS_TEXT = "Kısayollar: Boşluk = Duraklat/Devam, Esc = Durdur"
+COMPACT_HEIGHT = 720            # bu yükseklikten alçak pencerede sıkı yerleşim
 
 TWO_ROOM_MODEL_NOTE = (
     "Not: 1×2 ortamda her odadan yalnızca bir geçerli hareket olduğu için bu ajanın "
@@ -174,18 +182,18 @@ class VacuumApp:
         self._log_trimmed = 0           # ekrandan kaldırılan günlük satırı sayısı
         self._log_following = True      # günlük en son kaydı takip ediyor mu?
 
-        root.title("Robot Süpürge Ajanı")
+        root.title(APP_TITLE)
         # Piksel cinsinden boyutlar ekran ölçeğiyle büyütülür; ekrana sığmayacaksa sınırlanır.
         self.scale = ui_scale(root)
         self.style = theme.setup(root, self.scale)
-        width = min(round(820 * self.scale), int(root.winfo_screenwidth() * 0.95))
-        height = min(round(800 * self.scale), int(root.winfo_screenheight() * 0.90))
+        width = min(round(1440 * self.scale), int(root.winfo_screenwidth() * 0.94))
+        height = min(round(1040 * self.scale), int(root.winfo_screenheight() * 0.90))
         root.geometry(f"{width}x{height}")
         root.minsize(min(round(680 * self.scale), width), min(round(620 * self.scale), height))
         root.protocol("WM_DELETE_WINDOW", self.on_close)
 
+        self._build_header()
         self._build_settings()
-        self._build_controls()
         self._build_canvas()
         self._build_status()
         self._build_log()
@@ -204,80 +212,209 @@ class VacuumApp:
     # ------------------------------------------------------------------
     # Arayüz bileşenleri
     # ------------------------------------------------------------------
+    def _build_header(self):
+        """Üst başlık: simge, uygulama adı ve kısa açıklama."""
+        page = theme.COLORS["page"]
+        frame = ttk.Frame(self.root, style="Page.TFrame")
+        frame.grid(row=0, column=0, sticky="ew", padx=self._px(theme.SPACING["page"]),
+                   pady=(self._px(12), self._px(8)))
+        size = self._px(52)
+        self.logo = tk.Canvas(frame, width=size, height=size, highlightthickness=0, background=page)
+        draw_logo(self.logo, size, page)
+        self.logo.grid(row=0, column=0, rowspan=2, padx=(0, self._px(14)))
+        ttk.Label(frame, text=APP_TITLE, style="Title.TLabel").grid(row=0, column=1, sticky="sw")
+        self.subtitle = ttk.Label(frame, text=APP_SUBTITLE, style="Subtitle.TLabel")
+        self.subtitle.grid(row=1, column=1, sticky="nw")
+
     def _build_settings(self):
-        frame = ttk.LabelFrame(self.root, text="Ayarlar", padding=8)
-        frame.grid(row=0, column=0, sticky="ew", padx=10, pady=(10, 4))
+        """Ayarlar kartı: başlık ve not, ayar alanları, kontrol düğmeleri."""
+        outer, body = theme.card(self.root, theme.SPACING["card"], self.scale)
+        outer.grid(row=1, column=0, sticky="ew", padx=self._px(theme.SPACING["page"]),
+                   pady=(0, self._px(theme.SPACING["gap"])))
+        body.columnconfigure(0, weight=1)
+        self.settings_card, self._settings_body = outer, body
 
-        ttk.Label(frame, text="Adım aralığı (ms):").grid(row=0, column=0, sticky="w")
+        # Başlık satırı: simge + "Ayarlar" solda, açıklama notu sağda.
+        title_row = ttk.Frame(body, style="Card.TFrame")
+        title_row.grid(row=0, column=0, sticky="ew")
+        title_row.columnconfigure(2, weight=1)
+        self._section_title(title_row, "settings", "Ayarlar").grid(row=0, column=0, sticky="w")
+        self.settings_note = ttk.Label(title_row, text=SETTINGS_NOTE, style="Muted.TLabel", justify="right")
+        self.settings_note.grid(row=0, column=2, sticky="e", padx=(self._px(16), 0))
+        title_row.bind("<Configure>", lambda e: self.settings_note.configure(
+            wraplength=max(self._px(200), e.width - self._px(140))))
+
+        # Ayar alanları: etiket üstte, giriş alanı altta.
+        self.fields_frame = ttk.Frame(body, style="Card.TFrame")
+        self.fields_frame.grid(row=1, column=0, sticky="ew", pady=(self._px(10), self._px(12)))
         self.step_var = tk.StringVar(value=str(DEFAULT_STEP_MS))
-        ttk.Spinbox(
-            frame, textvariable=self.step_var, from_=MIN_STEP_MS, to=MAX_STEP_MS,
-            increment=100, width=7,
-        ).grid(row=0, column=1, padx=(4, 16))
-
-        ttk.Label(frame, text="Kirlenme aralığı (sn):").grid(row=0, column=2, sticky="w")
         self.dirt_var = tk.StringVar(value=str(DEFAULT_DIRT_SECONDS))
-        ttk.Spinbox(
-            frame, textvariable=self.dirt_var, from_=MIN_DIRT_SECONDS, to=MAX_DIRT_SECONDS,
-            increment=0.5, width=6,
-        ).grid(row=0, column=3, padx=(4, 16))
-
-        ttk.Label(frame, text="Seed (isteğe bağlı):").grid(row=0, column=4, sticky="w")
         self.seed_var = tk.StringVar()
-        ttk.Entry(frame, textvariable=self.seed_var, width=10).grid(row=0, column=5, padx=(4, 0))
-
-        ttk.Label(frame, text="Satır:").grid(row=1, column=0, sticky="w", pady=(6, 0))
         self.rows_var = tk.StringVar(value=str(DEFAULT_ROWS))
-        self.rows_spin = ttk.Spinbox(
-            frame, textvariable=self.rows_var, from_=MIN_GRID_SIZE, to=MAX_GRID_SIZE, width=7,
-        )
-        self.rows_spin.grid(row=1, column=1, padx=(4, 16), pady=(6, 0))
-
-        ttk.Label(frame, text="Sütun:").grid(row=1, column=2, sticky="w", pady=(6, 0))
         self.cols_var = tk.StringVar(value=str(DEFAULT_COLS))
-        self.cols_spin = ttk.Spinbox(
-            frame, textvariable=self.cols_var, from_=MIN_GRID_SIZE, to=MAX_GRID_SIZE, width=6,
-        )
-        self.cols_spin.grid(row=1, column=3, padx=(4, 16), pady=(6, 0))
-
-        ttk.Label(frame, text="Ajan türü:").grid(row=1, column=4, sticky="w", pady=(6, 0))
         self.agent_var = tk.StringVar(value=AGENT_TYPE_TEXT[DEFAULT_AGENT_TYPE])
-        self.agent_combo = ttk.Combobox(
-            frame, textvariable=self.agent_var, values=list(AGENT_TYPE_TEXT.values()),
-            state="readonly", width=20,
-        )
-        self.agent_combo.grid(row=1, column=5, padx=(4, 0), pady=(6, 0), sticky="w")
-        self.agent_var.trace_add("write", lambda *_: self._on_grid_setting_changed())
 
+        self._fields = []
+        field = self._field("Adım aralığı (ms)")
+        ttk.Spinbox(field, textvariable=self.step_var, from_=MIN_STEP_MS, to=MAX_STEP_MS, increment=100,
+                    width=8, **theme.widget_options("primary")).grid(row=1, column=0, sticky="ew")
+        field = self._field("Kirlenme aralığı (sn)")
+        ttk.Spinbox(field, textvariable=self.dirt_var, from_=MIN_DIRT_SECONDS, to=MAX_DIRT_SECONDS,
+                    increment=0.5, width=8, **theme.widget_options("primary")).grid(row=1, column=0, sticky="ew")
+        field = self._field("Seed (isteğe bağlı)")
+        self.seed_entry = ttk.Entry(field, textvariable=self.seed_var, width=12, **theme.widget_options("primary"))
+        self.seed_entry.grid(row=1, column=0, sticky="ew")
+        self._add_placeholder(self.seed_entry, self.seed_var, SEED_PLACEHOLDER)
+        field = self._field("Satır")
+        self.rows_spin = ttk.Spinbox(field, textvariable=self.rows_var, from_=MIN_GRID_SIZE, to=MAX_GRID_SIZE,
+                                     width=6, **theme.widget_options("primary"))
+        self.rows_spin.grid(row=1, column=0, sticky="ew")
+        field = self._field("Sütun")
+        self.cols_spin = ttk.Spinbox(field, textvariable=self.cols_var, from_=MIN_GRID_SIZE, to=MAX_GRID_SIZE,
+                                     width=6, **theme.widget_options("primary"))
+        self.cols_spin.grid(row=1, column=0, sticky="ew")
+        field = self._field("Ajan türü", weight=2)
+        self.agent_combo = ttk.Combobox(field, textvariable=self.agent_var, values=list(AGENT_TYPE_TEXT.values()),
+                                        state="readonly", width=22, **theme.widget_options("primary"))
+        self.agent_combo.grid(row=1, column=0, sticky="ew")
+        self.agent_var.trace_add("write", lambda *_: self._on_grid_setting_changed())
         # Simülasyon çalışmıyorken boyut değişikliği tuvalde önizlenir.
         self.rows_var.trace_add("write", lambda *_: self._on_grid_setting_changed())
         self.cols_var.trace_add("write", lambda *_: self._on_grid_setting_changed())
+        self._fields_columns = None
+        self.fields_frame.bind("<Configure>", lambda e: self._layout_fields(e.width))
 
-        ttk.Label(
-            frame,
-            text=("Aralıklar çalışırken de değiştirilebilir. Satır/sütun (1–6, en az 2 oda) "
-                  "ve ajan türü yalnızca Başlat'ta uygulanır."),
-            foreground="#555",
-        ).grid(row=2, column=0, columnspan=6, sticky="w", pady=(6, 0))
+        self._build_controls(body)
 
-    def _build_controls(self):
-        frame = ttk.Frame(self.root, padding=(10, 4))
-        frame.grid(row=1, column=0, sticky="ew")
+    def _section_title(self, parent, icon, text, note=None):
+        """Kart başlığı: simge (varsa), kalın başlık ve isteğe bağlı açıklama."""
+        frame = ttk.Frame(parent, style="Card.TFrame")
+        label = theme.icon_label(frame, icon, theme.COLORS["card"], size=14)
+        if label is not None:
+            label.pack(side="left", padx=(0, self._px(8)))
+        title = ttk.Label(frame, text=text, style="CardTitle.TLabel")
+        title.pack(side="left")
+        frame.title_label = title
+        frame.note_label = None
+        if note:
+            frame.note_label = ttk.Label(frame, text=note, style="CardNote.TLabel")
+            frame.note_label.pack(side="left", padx=(self._px(6), 0))
+        return frame
+
+    def _field(self, label, weight=1):
+        frame = ttk.Frame(self.fields_frame, style="Card.TFrame")
+        frame.columnconfigure(0, weight=1)
+        ttk.Label(frame, text=label, style="Field.TLabel").grid(row=0, column=0, sticky="w",
+                                                                pady=(0, self._px(4)))
+        self._fields.append((frame, weight))
+        return frame
+
+    def _layout_fields(self, width):
+        """Ayar alanlarını genişliğe göre 6, 3 ya da 2 sütuna yerleştirir."""
+        min_width = self._px(150)
+        columns = 6 if width >= 6 * min_width else 3 if width >= 3 * min_width else 2
+        if columns == self._fields_columns:
+            return
+        self._fields_columns = columns
+        gap = self._px(theme.SPACING["field"])
+        for index in range(6):
+            self.fields_frame.columnconfigure(index, weight=0, uniform="")
+        for index, (frame, weight) in enumerate(self._fields):
+            row, column = divmod(index, columns)
+            frame.grid(row=row, column=column, sticky="ew",
+                       padx=(0 if column == 0 else gap, 0), pady=(0 if row == 0 else gap, 0))
+            self.fields_frame.columnconfigure(column, weight=max(weight, 1) if columns == 6 else 1,
+                                              uniform="" if columns == 6 else "fields")
+
+    def _add_placeholder(self, entry, variable, text):
+        """Boş alanda soluk örnek metin; yazmaya başlayınca kaybolur (değişkene yazılmaz)."""
+        hint = tk.Label(entry, text=text, foreground=theme.COLORS["disabled_fg"],
+                        background=theme.COLORS["card"], font=theme.font("body"), borderwidth=0)
+
+        def update(*_):
+            if variable.get() or entry.focus_get() is entry:
+                hint.place_forget()
+            else:
+                hint.place(x=self._px(8), rely=0.5, anchor="w")
+
+        hint.bind("<Button-1>", lambda _e: entry.focus_set())
+        entry.bind("<FocusIn>", update, add="+")
+        entry.bind("<FocusOut>", update, add="+")
+        variable.trace_add("write", update)
+        update()
+        self.seed_placeholder = hint
+
+    def _build_controls(self, parent):
+        frame = ttk.Frame(parent, style="Card.TFrame")
+        frame.grid(row=2, column=0, sticky="ew")
+        frame.columnconfigure(1, weight=1)
+        buttons = ttk.Frame(frame, style="Card.TFrame")
+        buttons.grid(row=0, column=0, sticky="w")
 
         # Düğmeler odak almaz; böylece Boşluk tuşu yalnızca kısayol olarak çalışır.
-        self.start_button = ttk.Button(frame, text="Başlat", command=self.start, takefocus=False)
-        self.pause_button = ttk.Button(frame, text="Duraklat", command=self.toggle_pause, takefocus=False)
-        self.stop_button = ttk.Button(frame, text="Durdur", command=self.stop, takefocus=False)
+        self.start_button = ttk.Button(buttons, text=theme.button_text("start", "Başlat"), command=self.start,
+                                       takefocus=False, width=12, **theme.button_options("primary"))
+        self.pause_button = ttk.Button(buttons, text=theme.button_text("pause", "Duraklat"),
+                                       command=self.toggle_pause, takefocus=False, width=12,
+                                       **theme.button_options("secondary"))
+        self.stop_button = ttk.Button(buttons, text=theme.button_text("stop", "Durdur"), command=self.stop,
+                                      takefocus=False, width=12, **theme.button_options("danger"))
+        self.compare_button = ttk.Button(buttons, text=theme.button_text("compare", "Ajanları Karşılaştır"),
+                                         command=self.open_comparison, takefocus=False,
+                                         **theme.button_options("outline"))
+        gap = self._px(10)
         self.start_button.pack(side="left")
-        self.pause_button.pack(side="left", padx=6)
-        self.stop_button.pack(side="left")
-        self.compare_button = ttk.Button(frame, text="Ajanları Karşılaştır", command=self.open_comparison,
-                                         takefocus=False)
-        self.compare_button.pack(side="left", padx=(16, 0))
+        self.pause_button.pack(side="left", padx=(gap, 0))
+        self.stop_button.pack(side="left", padx=(gap, 0))
+        self.compare_button.pack(side="left", padx=(gap, 0))
 
-        ttk.Label(frame, text="Kısayollar: Boşluk = Duraklat/Devam, Esc = Durdur", foreground="#555").pack(
-            side="right"
+        prefix = "" if theme.text_only() else "\u2328  "
+        self.shortcut_badge = tk.Label(
+            frame, text=f"{prefix}{SHORTCUTS_TEXT}",
+            background=theme.COLORS["badge_bg"], foreground=theme.COLORS["badge_fg"],
+            font=theme.font("badge"), padx=self._px(12), pady=self._px(6), borderwidth=0,
         )
+        self.shortcut_badge.grid(row=0, column=2, sticky="e", padx=(self._px(12), 0))
+        self._controls_frame, self._buttons_frame = frame, buttons
+        self._density = None
+        frame.bind("<Configure>", lambda _e: self._update_density())
+        self.root.bind("<Configure>", lambda e: self._update_density() if e.widget is self.root else None,
+                       add="+")
+
+    def _update_density(self):
+        """Pencere boyutuna göre sıkı ya da ferah yerleşim.
+
+        * Alçak pencerede alt başlık gizlenir.
+        * Kısayol rozeti düğmelerin yanına sığmazsa ferah yerleşimde alta iner;
+          alçak pencerede rozet gizlenir ve kısayollar ayarlar notuna eklenir.
+        """
+        compact = self.root.winfo_height() < self._px(COMPACT_HEIGHT)
+        needed = (self._buttons_frame.winfo_reqwidth() + self.shortcut_badge.winfo_reqwidth()
+                  + self._px(24))
+        fits = self._controls_frame.winfo_width() >= needed
+        density = (compact, fits)
+        if density == self._density:
+            return
+        self._density = density
+        if compact:
+            self.subtitle.grid_remove()
+        else:
+            self.subtitle.grid()
+        self._settings_body.configure(padding=self._px(10 if compact else theme.SPACING["card"]))
+        self.fields_frame.grid_configure(pady=(self._px(6), self._px(8)) if compact
+                                         else (self._px(10), self._px(12)))
+        note = SETTINGS_NOTE
+        if fits:
+            self.shortcut_badge.grid(row=0, column=2, columnspan=1, sticky="e", padx=(self._px(12), 0), pady=0)
+        elif not compact:
+            self.shortcut_badge.grid(row=1, column=0, columnspan=3, sticky="w", padx=0, pady=(self._px(8), 0))
+        else:
+            self.shortcut_badge.grid_remove()
+            note = f"{SETTINGS_NOTE} {SHORTCUTS_TEXT}."
+        self.settings_note.configure(text=note)
+
+    def _px(self, value):
+        return theme.px(value, self.scale)
 
     def _build_canvas(self):
         # Gerçek ortam ve iç model iki ayrı panelde. Geniş alanda yan yana,
@@ -661,7 +798,8 @@ class VacuumApp:
         self.start_button.configure(state="disabled" if active else "normal")
         self.pause_button.configure(
             state="normal" if active else "disabled",
-            text="Devam" if state is SimulationState.PAUSED else "Duraklat",
+            text=(theme.button_text("resume", "Devam") if state is SimulationState.PAUSED
+                  else theme.button_text("pause", "Duraklat")),
         )
         self.stop_button.configure(state="normal" if active else "disabled")
         # Grid boyutu çalışırken ve duraklatılmışken değiştirilemez.
