@@ -96,6 +96,12 @@ def _check_tkinter_available():
     return f"Tkinter/Tcl {version} kullanılabilir"
 
 
+def _check_theme():
+    """Arayüz teması yüklenebiliyor mu? (Pencere açmaz; kullanılan temayı bildirir.)"""
+    import theme
+    return f"Arayüz teması: {theme.theme_description()}"
+
+
 CHECKS = [
     _check_reflex_table,
     _check_two_room_simulation,
@@ -104,6 +110,7 @@ CHECKS = [
     _check_environment_bounds,
     _check_comparison,
     _check_tkinter_available,
+    _check_theme,
 ]
 
 

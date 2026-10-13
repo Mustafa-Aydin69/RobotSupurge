@@ -19,6 +19,7 @@ from tkinter import messagebox, ttk
 from agents import AGENT_TYPES, DEFAULT_AGENT_TYPE, GOAL_DIRTY, GOAL_EXPLORE, GOAL_UNKNOWN
 from environment import MAX_GRID_SIZE, MIN_GRID_SIZE, Action, Grid, Status
 from simulation import DirtRecord, Simulation, SimulationState
+import theme
 from timers import PausableTimer  # noqa: F401  (testler ve geriye uyumluluk için dışa aktarılır)
 from views import (  # noqa: F401  (testler ve geriye uyumluluk için dışa aktarılır)
     COLOR_GOAL, MODEL_CATEGORY_FILL, MODEL_CATEGORY_TEXT, MODEL_CLEAN, MODEL_DIRTY, MODEL_INFERRED,
@@ -176,6 +177,7 @@ class VacuumApp:
         root.title("Robot Süpürge Ajanı")
         # Piksel cinsinden boyutlar ekran ölçeğiyle büyütülür; ekrana sığmayacaksa sınırlanır.
         self.scale = ui_scale(root)
+        self.style = theme.setup(root, self.scale)
         width = min(round(820 * self.scale), int(root.winfo_screenwidth() * 0.95))
         height = min(round(800 * self.scale), int(root.winfo_screenheight() * 0.90))
         root.geometry(f"{width}x{height}")

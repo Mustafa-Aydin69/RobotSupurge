@@ -1,7 +1,11 @@
 # Robot Süpürge Ajanı — Yapay Zekâya Giriş, Dönem İçi Proje 1
 #
-# Gereksinimler : Python 3.9 veya üzeri. Ek paket gerekmez
-#                 (yalnızca standart kütüphane ve Tkinter kullanılır).
+# Gereksinimler : Python 3.9 veya üzeri ve Tkinter (Python'un Windows kurulumuyla gelir).
+#                 Arayüz teması için ttkbootstrap 1.14.7 (requirements.txt):
+#                     pip install -r requirements.txt
+#                 requirements.txt yoksa:  pip install ttkbootstrap==1.14.7
+#                 ttkbootstrap kurulu değilse program standart ttk temasıyla, aynı
+#                 işlevlerle çalışır; yalnızca görünüm sadeleşir.
 # Çalıştırma    : python main.py
 # Doğrulama     : python main.py --self-test   (pencere açmadan; çıkış kodu 0 = başarılı)
 # Testler       : python -m unittest discover -s tests -v
@@ -14,6 +18,7 @@
 #   comparison.py      ajan karşılaştırma ölçümleri (arayüzden bağımsız)
 #   gui.py             Tkinter ana penceresi
 #   views.py           tuval çizimleri
+#   theme.py           arayüz teması: renkler, yazı tipleri, ttkbootstrap stilleri
 #   timers.py          duraklatılabilen zamanlayıcı
 #   compare_window.py  ajan karşılaştırma penceresi
 #   self_test.py       --self-test doğrulaması

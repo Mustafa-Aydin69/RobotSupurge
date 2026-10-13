@@ -320,11 +320,15 @@ olmalıdır):
 
 ```
 main.py  environment.py  agents.py  simulation.py  comparison.py
-gui.py  views.py  timers.py  compare_window.py  self_test.py
+gui.py  views.py  theme.py  timers.py  compare_window.py  self_test.py
 ```
 
+Arayüz teması için gereken paket `main.py`'nin başındaki açıklamada yazılıdır
+(`pip install ttkbootstrap==1.14.7`); aynı bilgi `requirements.txt` dosyasındadır.
+ttkbootstrap kurulu değilse program standart ttk temasıyla aynı işlevlerle çalışır.
+
 EXE dosyaları, `tests/`, `tools/`, `build_exe.bat` ve README teslime dahil
-edilmez; GitHub reposunda korunur. Bu on dosyanın eksiksiz olduğu bir testle
+edilmez; GitHub reposunda korunur. Bu on bir dosyanın eksiksiz olduğu bir testle
 doğrulanır (`tests/test_submission.py`).
 
 ## Teslim öncesi kontrol listesi

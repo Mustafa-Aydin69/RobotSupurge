@@ -29,8 +29,8 @@ class SelfTestTests(unittest.TestCase):
                 self_test.run_self_test(path)
             with open(path, encoding="utf-8") as handle:
                 text = handle.read()
-        self.assertIn("Sonuç: 7/7 kontrol başarılı.", text)
-        self.assertEqual(text.count("[TAMAM]"), 7)
+        self.assertIn("Sonuç: 8/8 kontrol başarılı.", text)
+        self.assertEqual(text.count("[TAMAM]"), 8)
 
 
 class MainArgumentTests(unittest.TestCase):
