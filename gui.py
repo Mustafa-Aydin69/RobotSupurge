@@ -34,6 +34,7 @@ DEFAULT_STEP_MS = 700
 MIN_STEP_MS, MAX_STEP_MS = 100, 5000
 DEFAULT_DIRT_SECONDS = 3.0
 CLOCK_REFRESH_MS = 200          # süre göstergesinin yenilenme aralığı
+SIDE_BY_SIDE_MIN_WIDTH = 760    # iki panelin yan yana dizildiği en küçük tahta genişliği
 MAX_LOG_LINES = 10000           # ekrandaki günlüğün en fazla satır sayısı
 LOG_TRIM_NOTICE = ("… Eski kayıtlar ekrandan kaldırıldı ({count} satır). "
                    "Simülasyonun kendi günlüğü eksiksiz korunuyor.")
@@ -155,6 +156,8 @@ class VacuumApp:
 
     CANVAS_WIDTH = 560    # başlangıç boyutu; pencereyle birlikte büyür
     CANVAS_HEIGHT = 240
+    CANVAS_MIN_HEIGHT = 120   # tuvalin istediği yükseklik; pencere küçükse günlüğe yer kalır
+    LOG_MIN_HEIGHT = 110      # günlüğün dar pencerede de görünür kalan en küçük yüksekliği
 
     def __init__(self, root):
         self.root = root
@@ -168,6 +171,7 @@ class VacuumApp:
         self._clock_job = None          # süre göstergesi zamanlayıcısı
         self.compare_window = None      # karşılaştırma penceresi (açıksa)
         self._log_trimmed = 0           # ekrandan kaldırılan günlük satırı sayısı
+        self._log_following = True      # günlük en son kaydı takip ediyor mu?
 
         root.title("Robot Süpürge Ajanı")
         # Piksel cinsinden boyutlar ekran ölçeğiyle büyütülür; ekrana sığmayacaksa sınırlanır.
@@ -188,7 +192,7 @@ class VacuumApp:
         # zaman üstte görünür kalır.
         root.columnconfigure(0, weight=1)
         root.rowconfigure(2, weight=3)
-        root.rowconfigure(4, weight=2)
+        root.rowconfigure(4, weight=2, minsize=round(self.LOG_MIN_HEIGHT * self.scale))
 
         root.bind("<space>", self._on_space_key)
         root.bind("<Escape>", self._on_escape_key)
@@ -282,7 +286,7 @@ class VacuumApp:
 
         self.env_frame = ttk.LabelFrame(self.board, text="Gerçek ortam", padding=2)
         self.canvas = tk.Canvas(
-            self.env_frame, width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT,
+            self.env_frame, width=self.CANVAS_WIDTH, height=self.CANVAS_MIN_HEIGHT,
             background="white", highlightthickness=0,
         )
         self.env_legend = ttk.Label(self.env_frame, text=environment_legend_text(),
@@ -293,7 +297,7 @@ class VacuumApp:
 
         self.model_frame = ttk.LabelFrame(self.board, text=MODEL_PANEL_TITLE, padding=2)
         self.model_canvas = tk.Canvas(
-            self.model_frame, width=self.CANVAS_WIDTH // 2, height=self.CANVAS_HEIGHT,
+            self.model_frame, width=self.CANVAS_WIDTH // 2, height=self.CANVAS_MIN_HEIGHT,
             background="white", highlightthickness=0,
         )
         self.model_legend_var = tk.StringVar()
@@ -319,11 +323,11 @@ class VacuumApp:
         """Panelleri yerleştirir.
 
         Model paneli gizliyse gerçek ortam bütün alanı kullanır. Görünürse
-        tahtanın en-boy oranına göre yan yana ya da alt alta dizilir.
+        tahta yeterince genişse yan yana, değilse alt alta dizilir.
         """
-        width, height = self.board.winfo_width(), self.board.winfo_height()
+        width = self.board.winfo_width()
         model_visible = self.model_frame.winfo_manager() == "grid"
-        side_by_side = width / max(height, 1) >= 1.6
+        side_by_side = width >= round(SIDE_BY_SIDE_MIN_WIDTH * self.scale)
         layout = (model_visible, side_by_side)
         if layout == self._board_layout:
             return
@@ -370,6 +374,24 @@ class VacuumApp:
         self.log_text.tag_configure("dirt", foreground="#9a5b13")
         self.log_text.tag_configure("info", foreground="#1d70b8")
         self.log_text.tag_configure("goal", foreground=COLOR_GOAL)
+
+        # Günlük alanı yeniden boyutlanınca (ör. pencere ya da durum satırı
+        # değişince) en son kaydı izleyen görünüm en altta kalır. Kullanıcı
+        # kaydırınca takip durumu kullanıcının konumuna göre güncellenir.
+        self.log_text.bind("<Configure>", lambda _e: self._keep_log_position())
+        for widget, sequences in ((self.log_text, ("<MouseWheel>", "<Prior>", "<Next>", "<Control-End>",
+                                                   "<Control-Home>")),
+                                  (scrollbar, ("<ButtonRelease-1>",))):
+            for sequence in sequences:
+                widget.bind(sequence, lambda _e: self.root.after_idle(self._update_log_following), add="+")
+
+    def _update_log_following(self):
+        if self.log_text.winfo_exists():
+            self._log_following = self.log_text.yview()[1] >= 0.999
+
+    def _keep_log_position(self):
+        if self._log_following:
+            self.log_text.yview_moveto(1.0)
 
     # ------------------------------------------------------------------
     # Kullanıcı komutları
@@ -593,8 +615,10 @@ class VacuumApp:
         text.insert("end", line + "\n", tag or ())
         self._trim_log()
         text.configure(state="disabled")
+        self._log_following = at_bottom
         if at_bottom:
-            text.see("end")
+            # see("end") son satır kısmen görünürken kaydırmayabilir; tam alta inilir.
+            text.yview_moveto(1.0)
 
     def _log_line_count(self):
         """Ekrandaki kayıt sayısı (kaldırma bilgisi satırı hariç)."""
@@ -619,6 +643,7 @@ class VacuumApp:
         self.log_text.delete("1.0", "end")
         self.log_text.configure(state="disabled")
         self._log_trimmed = 0
+        self._log_following = True
 
     # ------------------------------------------------------------------
     # Görünüm güncelleme

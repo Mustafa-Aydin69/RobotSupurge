@@ -963,6 +963,26 @@ class WindowTests(unittest.TestCase):
         self.root.update()
         self.assertGreaterEqual(app.log_text.yview()[1], 0.999)
 
+    def test_log_stays_at_bottom_when_its_area_shrinks(self):
+        """Pencere küçülünce son kaydı izleyen günlük en altta kalır; geçmişe bakanınki korunur."""
+        app = self.app
+        self.root.deiconify()
+        self.root.geometry("1000x820")
+        self.root.update()
+        app.start()
+        app.step_timer.cancel()
+        app.dirt_timer.cancel()
+        for i in range(200):
+            app._append_log(f"satır {i}")
+        self.root.geometry("1000x700")
+        self.root.update()
+        self.assertGreaterEqual(app.log_text.yview()[1], 0.999)
+        app.log_text.yview_moveto(0.0)
+        app._update_log_following()
+        self.root.geometry("1000x780")
+        self.root.update()
+        self.assertEqual(app.log_text.yview()[0], 0.0)
+
     def test_autoscroll_continues_while_window_hidden(self):
         app = self.app                                       # pencere gizli (withdraw)
         app.start()
