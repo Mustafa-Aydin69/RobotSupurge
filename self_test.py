@@ -129,8 +129,23 @@ def run_self_test(report_path=None):
         with open(report_path, "w", encoding="utf-8") as handle:
             handle.write(text)
     if sys.stdout is not None:      # pencereli EXE'de stdout yoktur
-        try:
-            sys.stdout.write(text)
-        except (OSError, UnicodeEncodeError):
-            pass
+        _write_console(text)
     return 0 if failed == 0 else 1
+
+
+def _write_console(text):
+    """Metni konsola yazar; kodlamada olmayan harfler (ör. ğ, ş) "?" olarak yazılır.
+
+    Çıktı Türkçe harfleri desteklemeyen bir kodlamaya yönlendirildiğinde
+    sonucun tamamen kaybolmaması içindir.
+    """
+    try:
+        sys.stdout.write(text)
+    except UnicodeEncodeError:
+        encoding = getattr(sys.stdout, "encoding", None) or "ascii"
+        try:
+            sys.stdout.write(text.encode(encoding, "replace").decode(encoding))
+        except (OSError, LookupError, UnicodeError):
+            pass
+    except OSError:
+        pass

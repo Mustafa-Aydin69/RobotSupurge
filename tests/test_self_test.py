@@ -1,5 +1,6 @@
 """--self-test doğrulaması ve main.py komut satırı testleri."""
 
+import io
 import os
 import tempfile
 import unittest
@@ -31,6 +32,17 @@ class SelfTestTests(unittest.TestCase):
                 text = handle.read()
         self.assertIn("Sonuç: 8/8 kontrol başarılı.", text)
         self.assertEqual(text.count("[TAMAM]"), 8)
+
+
+    def test_result_is_printed_even_if_console_lacks_turkish_letters(self):
+        """Çıktı kodlaması Türkçe harfleri desteklemese de sonuç satırı yazılır."""
+        buffer = io.BytesIO()
+        stream = io.TextIOWrapper(buffer, encoding="cp1252")
+        with mock.patch("sys.stdout", stream):
+            self.assertEqual(self_test.run_self_test(), 0)
+        stream.flush()
+        output = buffer.getvalue().decode("cp1252")
+        self.assertIn("8/8 kontrol ba?ar?l?.", output)
 
 
 class MainArgumentTests(unittest.TestCase):
