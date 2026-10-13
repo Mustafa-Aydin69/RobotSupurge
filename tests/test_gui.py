@@ -563,7 +563,8 @@ class WindowTests(unittest.TestCase):
         app.agent_var.set("Model Tabanlı Ajan")
         self.root.update()
         self.assertEqual(app.model_frame.winfo_manager(), "grid")   # önizlemede görünür
-        self.assertEqual(app.model_frame["text"], MODEL_PANEL_TITLE)
+        title = app.model_title
+        self.assertEqual(f"{title.title_label['text']} {title.note_label['text']}", MODEL_PANEL_TITLE)
         app.agent_var.set("Basit Refleks Ajan")
         self.root.update()
         self.assertEqual(app.model_frame.winfo_manager(), "")
@@ -714,7 +715,7 @@ class WindowTests(unittest.TestCase):
         app = self.app
         app.agent_var.set("Model Tabanlı Ajan")
         self.root.update()
-        legend = app.model_legend_var.get()
+        legend = app.model_legend.text()
         self.assertIn("ajan adımı", legend)
         self.assertIn("gerçek süre değildir", legend)
         self.assertNotIn("olasılık", legend)
@@ -1033,12 +1034,17 @@ class WindowTests(unittest.TestCase):
         app = self.app
         app.agent_var.set("Amaç Tabanlı Ajan")
         self.root.update()
-        env_legend = app.env_legend["text"]
-        for word in ("T: temiz", "K: kirli", "robot", "hedef"):
+        env_legend = app.env_legend.text()
+        for word in ("Temiz (küçük odada T)", "Kirli (küçük odada K)", "Robotun odası", "Ajanın hedefi"):
             self.assertIn(word, env_legend)
-        model_legend = app.model_legend_var.get()
-        for word in ("bilinmiyor", "çıkarım", "Eski", "kirli", "konumu", "rota", "ajan adımı"):
+        model_legend = app.model_legend.text()
+        for word in ("Bilinmiyor", "çıkarım", "Eski", "Kirli", "konum", "rota", "ajan adımı"):
             self.assertIn(word, model_legend)
+        # Hedef ve rota yalnızca amaç tabanlı ajanın açıklamasında.
+        app.agent_var.set("Model Tabanlı Ajan")
+        self.root.update()
+        self.assertNotIn("Ajanın hedefi", app.env_legend.text())
+        self.assertNotIn("rota", app.model_legend.text())
 
     def test_invalid_interval_falls_back_to_last_valid(self):
         self.app.step_var.set("abc")

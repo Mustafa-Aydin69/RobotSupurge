@@ -15,26 +15,32 @@ from types import MappingProxyType
 
 from agents import SOURCE_INFERENCE, ModelSnapshot
 from environment import Status
+from theme import CANVAS_COLORS
 
 # ----------------------------------------------------------------------
 # Metinler ve renkler
 # ----------------------------------------------------------------------
 STATUS_TEXT = {Status.CLEAN: "Temiz", Status.DIRTY: "Kirli"}
 
-COLOR_CLEAN = "#cdeac0"
-COLOR_DIRTY = "#c8a27a"
-COLOR_DIRT_SPOT = "#7a5230"
-COLOR_ROBOT = "#2f3e4e"
-COLOR_ROBOT_RING = "#5fa8d3"
-COLOR_ACTIVE_BORDER = "#1d70b8"
+# Renkler theme.py'de tanımlıdır; burada çizimde kullanılan adlarıyla anılır.
+COLOR_CLEAN = CANVAS_COLORS["clean"]
+COLOR_DIRTY = CANVAS_COLORS["dirty"]
+COLOR_DIRT_SPOT = CANVAS_COLORS["dirt_spot"]
+COLOR_ROBOT = CANVAS_COLORS["robot"]
+COLOR_ROBOT_RING = CANVAS_COLORS["robot_ring"]
+COLOR_ACTIVE_BORDER = CANVAS_COLORS["active_border"]
+COLOR_CELL_BORDER = CANVAS_COLORS["cell_border"]
+COLOR_CELL_TEXT = CANVAS_COLORS["cell_text"]
+COLOR_EMPTY = CANVAS_COLORS["empty"]
 
 # Hedef ve rota rengi
-COLOR_GOAL = "#7b3fbf"
+COLOR_GOAL = CANVAS_COLORS["goal"]
 
 # İç model paneli renkleri
-COLOR_MODEL_UNKNOWN = "#e2e2e2"
-COLOR_MODEL_STALE = "#f2e3a0"
-COLOR_STALE_HATCH = "#b8962e"     # eskimiş bilginin çizgili deseni
+COLOR_MODEL_UNKNOWN = CANVAS_COLORS["model_unknown"]
+COLOR_MODEL_STALE = CANVAS_COLORS["model_stale"]
+COLOR_STALE_HATCH = CANVAS_COLORS["stale_hatch"]     # eskimiş bilginin çizgili deseni
+COLOR_STALE_BORDER = CANVAS_COLORS["stale_border"]
 
 # İç model kategorileri ve ekrandaki adları
 MODEL_UNKNOWN, MODEL_CLEAN, MODEL_INFERRED, MODEL_STALE, MODEL_DIRTY = (
@@ -54,7 +60,10 @@ MODEL_CATEGORY_FILL = {
     MODEL_STALE: COLOR_MODEL_STALE,
     MODEL_DIRTY: COLOR_DIRTY,
 }
-MODEL_PANEL_TITLE = "Ajanın iç modeli (gerçek durum değil)"
+MODEL_PANEL_NAME = "Ajanın iç modeli"
+MODEL_PANEL_NOTE = "(gerçek durum değil)"
+MODEL_PANEL_TITLE = f"{MODEL_PANEL_NAME} {MODEL_PANEL_NOTE}"
+MODEL_AGE_NOTE = "Yaş: son bilgiden bu yana geçen ajan adımı; gerçek süre değildir."
 
 # Kirli odadaki lekelerin oda içindeki göreli konumları (x, y, yarıçap)
 DIRT_SPOTS = [(0.18, 0.30, 9), (0.70, 0.22, 7), (0.32, 0.72, 11), (0.82, 0.66, 8), (0.55, 0.45, 6)]
@@ -73,7 +82,7 @@ def compute_layout(width, height, rows, cols):
     cell_w = max(1.0, (width - gap * (cols + 1)) / cols)
     cell_h = max(1.0, (height - gap * (rows + 1)) / rows)
     # Çok uzun ya da çok yassı odalar oluşmasın.
-    cell_w = min(cell_w, cell_h * 1.6)
+    cell_w = min(cell_w, cell_h * 2.4)
     cell_h = min(cell_h, cell_w * 1.2)
     grid_w = cols * cell_w + (cols - 1) * gap
     grid_h = rows * cell_h + (rows - 1) * gap
@@ -106,20 +115,33 @@ def empty_snapshot():
     return ModelSnapshot(0, None, MappingProxyType({}))
 
 
-def model_legend_text(threshold):
-    """İç model panelinin lejantı."""
-    return (
-        "?  gri: bilinmiyor · yeşil: temiz (algı) · kesikli kenar: temiz (çıkarım) · "
-        f"sarı + çizgili, \"Eski\": eskimiş bilgi (yaş ≥ {threshold}) · kahverengi: kirli\n"
-        "● mavi nokta: ajanın bildiği konumu · □ mor çerçeve ve ok: hedef ve rota. "
-        "Yaş, son bilgiden bu yana geçen ajan adımıdır; gerçek süre değildir."
-    )
+# Açıklama öğeleri: (tür, renk, simge, metin). "swatch" renk kutucuğu,
+# "glyph" renkli bir simge karakteridir.
+def model_legend_items(threshold, show_plan):
+    """İç model panelinin açıklaması."""
+    items = [
+        ("swatch", COLOR_CLEAN, None, "Temiz (algı)"),
+        ("swatch", COLOR_CLEAN, None, "Temiz (çıkarım, kesikli kenar)"),
+        ("swatch", COLOR_DIRTY, None, "Kirli"),
+        ("swatch", COLOR_MODEL_STALE, None, f"Eski, çizgili (yaş ≥ {threshold})"),
+        ("swatch", COLOR_MODEL_UNKNOWN, None, "Bilinmiyor (?)"),
+        ("glyph", COLOR_ACTIVE_BORDER, "\u25cf", "Ajanın bildiği konum"),
+    ]
+    if show_plan:
+        items.append(("glyph", COLOR_GOAL, "\u25a1\u2192", "Hedef ve rota"))
+    return items
 
 
-def environment_legend_text():
-    """Gerçek ortam panelinin lejantı."""
-    return ("Yeşil, T: temiz · Kahverengi lekeli, K: kirli · Mavi çerçeve ve robot: "
-            "robotun odası · ◆ mor elmas: ajanın hedefi (amaç tabanlı ajan)")
+def environment_legend_items(show_target):
+    """Gerçek ortam panelinin açıklaması."""
+    items = [
+        ("swatch", COLOR_CLEAN, None, "Temiz (küçük odada T)"),
+        ("swatch", COLOR_DIRTY, None, "Kirli (küçük odada K)"),
+        ("glyph", COLOR_ACTIVE_BORDER, "\u25a2", "Robotun odası"),
+    ]
+    if show_target:
+        items.append(("glyph", COLOR_GOAL, "\u25c6", "Ajanın hedefi"))
+    return items
 
 
 def _draw_hatch(canvas, left, top, right, bottom, spacing, tags):
@@ -173,9 +195,10 @@ def draw_model(canvas, grid, snapshot, plan, threshold, default_size):
         category = model_category(observation, age, threshold)
         is_current = snapshot.location == room
 
+        outline = COLOR_STALE_BORDER if category == MODEL_STALE else COLOR_CELL_BORDER
         c.create_rectangle(
             left, top, right, bottom, fill=MODEL_CATEGORY_FILL[category],
-            outline=COLOR_ACTIVE_BORDER if is_current else "#666",
+            outline=COLOR_ACTIVE_BORDER if is_current else outline,
             width=3 if is_current else 1,
             dash=(4, 3) if observation is not None and observation.source == SOURCE_INFERENCE else (),
             tags=("model-room", f"model:{room}", f"category:{category}"),
@@ -184,18 +207,20 @@ def draw_model(canvas, grid, snapshot, plan, threshold, default_size):
             _draw_hatch(c, left + 1, top + 1, right - 1, bottom - 1, max(6.0, size / 6),
                         ("stale-pattern", f"stale:{room}"))
         center_x, center_y = (left + right) / 2, (top + bottom) / 2
-        c.create_text(center_x, top + max(8, size * 0.14), text=room, font=title_font)
+        c.create_text(center_x, top + max(8, size * 0.16), text=room, font=title_font, fill=COLOR_CELL_TEXT)
         if category == MODEL_UNKNOWN:
             if size >= 24:
-                c.create_text(center_x, center_y + size * 0.08, text="?", fill="#777",
+                c.create_text(center_x, center_y + size * 0.08, text="?", fill="#7b8794",
                               font=_font(max(8, int(size * 0.3)), "bold"))
         else:
             if size >= 50:
-                c.create_text(center_x, center_y, text=MODEL_CATEGORY_TEXT[category], font=info_font)
+                c.create_text(center_x, center_y + size * 0.02, text=MODEL_CATEGORY_TEXT[category],
+                              font=info_font, fill=COLOR_CELL_TEXT)
             if size >= 26:
                 # Küçük hücrede ayrı etiket sığmadığı için eskilik yaş satırında belirtilir.
-                age_text = f"eski {age}" if category == MODEL_STALE and size < 50 else f"yaş {age}"
-                c.create_text(center_x, bottom - max(7, size * 0.14), text=age_text, font=info_font)
+                age_text = f"eski {age}" if category == MODEL_STALE and size < 50 else f"yaş: {age}"
+                c.create_text(center_x, bottom - max(7, size * 0.15), text=age_text, font=info_font,
+                              fill=COLOR_CELL_TEXT)
         if is_current:
             # Ajanın kendi konum bilgisi: sağ üst köşede küçük işaret.
             r = max(2.5, min(7.0, size * 0.07))
@@ -252,10 +277,10 @@ def draw_environment(canvas, grid, env, plan, default_size):
         status = env.status_of(room) if env else None
         is_current = env is not None and env.location == room
 
-        fill = {Status.CLEAN: COLOR_CLEAN, Status.DIRTY: COLOR_DIRTY}.get(status, "#eeeeee")
+        fill = {Status.CLEAN: COLOR_CLEAN, Status.DIRTY: COLOR_DIRTY}.get(status, COLOR_EMPTY)
         c.create_rectangle(
             left, top, right, bottom, fill=fill,
-            outline=COLOR_ACTIVE_BORDER if is_current else "#666",
+            outline=COLOR_ACTIVE_BORDER if is_current else COLOR_CELL_BORDER,
             width=border * 2 if is_current else border,
             tags=("room", f"room:{room}"),
         )
@@ -270,10 +295,11 @@ def draw_environment(canvas, grid, env, plan, default_size):
                 c.create_oval(x - r, y - r, x + r, y + r, fill=COLOR_DIRT_SPOT, outline="", tags=("dirt",))
 
         title = f"{room} Odası" if grid.is_two_room else room
-        c.create_text((left + right) / 2, top + title_y, text=title, font=title_font)
+        c.create_text((left + right) / 2, top + title_y, text=title, font=title_font, fill=COLOR_CELL_TEXT)
         if size >= 60:
             status_label = STATUS_TEXT[status] if status else "—"
-            c.create_text((left + right) / 2, bottom - max(8, size * 0.08), text=status_label, font=status_font)
+            c.create_text((left + right) / 2, bottom - max(8, size * 0.1), text=status_label, font=status_font,
+                          fill=COLOR_CELL_TEXT)
         elif status is not None:
             # Küçük hücrede durum yazısı sığmaz: sağ alt köşede T (temiz) / K (kirli).
             mark = "T" if status is Status.CLEAN else "K"

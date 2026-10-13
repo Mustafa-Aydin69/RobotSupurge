@@ -22,10 +22,10 @@ from simulation import DirtRecord, Simulation, SimulationState
 import theme
 from timers import PausableTimer  # noqa: F401  (testler ve geriye uyumluluk için dışa aktarılır)
 from views import (  # noqa: F401  (testler ve geriye uyumluluk için dışa aktarılır)
-    COLOR_GOAL, MODEL_CATEGORY_FILL, MODEL_CATEGORY_TEXT, MODEL_CLEAN, MODEL_DIRTY, MODEL_INFERRED,
-    MODEL_PANEL_TITLE, MODEL_STALE, MODEL_UNKNOWN, STATUS_TEXT, compute_layout, draw_environment,
-    draw_logo, draw_model, empty_snapshot, environment_legend_text, model_category, model_legend_text,
-    stale_threshold,
+    COLOR_GOAL, MODEL_AGE_NOTE, MODEL_CATEGORY_FILL, MODEL_CATEGORY_TEXT, MODEL_CLEAN, MODEL_DIRTY,
+    MODEL_INFERRED, MODEL_PANEL_NAME, MODEL_PANEL_NOTE, MODEL_PANEL_TITLE, MODEL_STALE, MODEL_UNKNOWN,
+    STATUS_TEXT, compute_layout, draw_environment, draw_logo, draw_model, empty_snapshot,
+    environment_legend_items, model_category, model_legend_items, stale_threshold,
 )
 
 # ----------------------------------------------------------------------
@@ -67,7 +67,7 @@ SETTINGS_NOTE = ("Aralıklar çalışırken de değiştirilebilir. Satır/sütun
                  "ve ajan türü yalnızca Başlat'ta uygulanır.")
 SEED_PLACEHOLDER = "örn. 42"
 SHORTCUTS_TEXT = "Kısayollar: Boşluk = Duraklat/Devam, Esc = Durdur"
-COMPACT_HEIGHT = 720            # bu yükseklikten alçak pencerede sıkı yerleşim
+COMPACT_HEIGHT = 900            # bu yükseklikten alçak pencerede sıkı yerleşim
 
 TWO_ROOM_MODEL_NOTE = (
     "Not: 1×2 ortamda her odadan yalnızca bir geçerli hareket olduğu için bu ajanın "
@@ -160,6 +160,62 @@ def ui_scale(root):
     return max(1.0, root.winfo_fpixels("1i") / 96.0)
 
 
+class LegendText(tk.Text):
+    """Renk kutucuklu, satır sonunda kendiliğinden alta geçen açıklama satırı.
+
+    Yüksekliği içeriğe göre ayarlanır; salt okunurdur. Öğeler
+    ``views.*_legend_items`` biçimindedir: ``(tür, renk, simge, metin)``.
+    """
+
+    def __init__(self, parent, scale=1.0):
+        super().__init__(parent, height=1, wrap="word", borderwidth=0, highlightthickness=0,
+                         background=theme.COLORS["card"], foreground=theme.COLORS["muted"],
+                         font=theme.font("caption"), cursor="arrow", takefocus=0,
+                         padx=0, pady=theme.px(4, scale), spacing1=theme.px(2, scale),
+                         spacing3=theme.px(2, scale), **theme.tk_options())
+        self.tag_configure("note", foreground=theme.COLORS["muted"])
+        self._content = None
+        self.configure(state="disabled")
+        self.bind("<Configure>", lambda _e: self._fit())
+
+    def set_items(self, items, note=None):
+        content = (tuple(items), note)
+        if content == self._content:
+            return
+        self._content = content
+        self.configure(state="normal")
+        self.delete("1.0", "end")
+        for index, (kind, color, symbol, text) in enumerate(items):
+            if index:
+                self.insert("end", "    ")
+            # Bölünmez boşluklar: kutucuk ve metni aynı satırda kalır.
+            if kind == "swatch":
+                tag = f"swatch-{color}"
+                self.tag_configure(tag, background=color)
+                self.insert("end", "\u00a0\u00a0\u00a0\u00a0", tag)
+            else:
+                tag = f"glyph-{color}"
+                self.tag_configure(tag, foreground=color, font=theme.font("caption", "bold"))
+                self.insert("end", symbol, tag)
+            self.insert("end", "\u00a0" + text.replace(" ", "\u00a0"))
+        if note:
+            self.insert("end", "\n" + note, "note")
+        self.configure(state="disabled")
+        self._fit()
+
+    def text(self):
+        """Açıklamanın düz metni (bölünmez boşluklar normal boşluk olarak)."""
+        return self.get("1.0", "end").replace("\u00a0", " ").strip()
+
+    def _fit(self):
+        if self.winfo_width() <= 1:
+            return
+        count = self.count("1.0", "end", "displaylines")
+        lines = count[0] if isinstance(count, tuple) else count
+        if lines and int(self.cget("height")) != lines:
+            self.configure(height=lines)
+
+
 class VacuumApp:
     """Robot süpürge simülasyonunun ana penceresi."""
 
@@ -202,7 +258,7 @@ class VacuumApp:
         # zaman üstte görünür kalır.
         root.columnconfigure(0, weight=1)
         root.rowconfigure(2, weight=3)
-        root.rowconfigure(4, weight=2, minsize=round(self.LOG_MIN_HEIGHT * self.scale))
+        root.rowconfigure(4, weight=1, minsize=round(self.LOG_MIN_HEIGHT * self.scale))
 
         root.bind("<space>", self._on_space_key)
         root.bind("<Escape>", self._on_escape_key)
@@ -219,12 +275,14 @@ class VacuumApp:
         frame.grid(row=0, column=0, sticky="ew", padx=self._px(theme.SPACING["page"]),
                    pady=(self._px(12), self._px(8)))
         size = self._px(52)
-        self.logo = tk.Canvas(frame, width=size, height=size, highlightthickness=0, background=page)
+        self.logo = tk.Canvas(frame, width=size, height=size, highlightthickness=0, background=page,
+                              **theme.tk_options())
         draw_logo(self.logo, size, page)
         self.logo.grid(row=0, column=0, rowspan=2, padx=(0, self._px(14)))
         ttk.Label(frame, text=APP_TITLE, style="Title.TLabel").grid(row=0, column=1, sticky="sw")
         self.subtitle = ttk.Label(frame, text=APP_SUBTITLE, style="Subtitle.TLabel")
         self.subtitle.grid(row=1, column=1, sticky="nw")
+        self.header = frame
 
     def _build_settings(self):
         """Ayarlar kartı: başlık ve not, ayar alanları, kontrol düğmeleri."""
@@ -329,7 +387,8 @@ class VacuumApp:
     def _add_placeholder(self, entry, variable, text):
         """Boş alanda soluk örnek metin; yazmaya başlayınca kaybolur (değişkene yazılmaz)."""
         hint = tk.Label(entry, text=text, foreground=theme.COLORS["disabled_fg"],
-                        background=theme.COLORS["card"], font=theme.font("body"), borderwidth=0)
+                        background=theme.COLORS["card"], font=theme.font("body"), borderwidth=0,
+                        **theme.tk_options())
 
         def update(*_):
             if variable.get() or entry.focus_get() is entry:
@@ -373,6 +432,7 @@ class VacuumApp:
             frame, text=f"{prefix}{SHORTCUTS_TEXT}",
             background=theme.COLORS["badge_bg"], foreground=theme.COLORS["badge_fg"],
             font=theme.font("badge"), padx=self._px(12), pady=self._px(6), borderwidth=0,
+            **theme.tk_options(),
         )
         self.shortcut_badge.grid(row=0, column=2, sticky="e", padx=(self._px(12), 0))
         self._controls_frame, self._buttons_frame = frame, buttons
@@ -396,10 +456,17 @@ class VacuumApp:
         if density == self._density:
             return
         self._density = density
+        # Alçak pencerede alt başlık başlığın yanına geçer, simge küçülür.
         if compact:
-            self.subtitle.grid_remove()
+            self.subtitle.grid_configure(row=0, column=2, sticky="sw", padx=(self._px(16), 0),
+                                         pady=(0, self._px(5)))
         else:
-            self.subtitle.grid()
+            self.subtitle.grid_configure(row=1, column=1, sticky="nw", padx=0, pady=0)
+        logo = self._px(40 if compact else 52)
+        self.logo.configure(width=logo, height=logo)
+        draw_logo(self.logo, logo, theme.COLORS["page"])
+        self.logo.grid_configure(rowspan=1 if compact else 2)
+        self.header.grid_configure(pady=(self._px(8), self._px(6)) if compact else (self._px(12), self._px(8)))
         self._settings_body.configure(padding=self._px(10 if compact else theme.SPACING["card"]))
         self.fields_frame.grid_configure(pady=(self._px(6), self._px(8)) if compact
                                          else (self._px(10), self._px(12)))
@@ -417,46 +484,52 @@ class VacuumApp:
         return theme.px(value, self.scale)
 
     def _build_canvas(self):
-        # Gerçek ortam ve iç model iki ayrı panelde. Geniş alanda yan yana,
-        # dar ve uzun alanda alt alta yerleştirilir.
-        self.board = ttk.Frame(self.root)
-        self.board.grid(row=2, column=0, sticky="nsew", padx=10, pady=4)
+        # Gerçek ortam ve iç model iki ayrı kartta. Geniş alanda yan yana,
+        # dar alanda alt alta yerleştirilir.
+        self.board = ttk.Frame(self.root, style="Page.TFrame")
+        self.board.grid(row=2, column=0, sticky="nsew", padx=self._px(theme.SPACING["page"]),
+                        pady=(0, self._px(theme.SPACING["gap"])))
         self._board_layout = None   # (model görünür mü, yan yana mı)
+        card_bg = theme.COLORS["card"]
 
-        self.env_frame = ttk.LabelFrame(self.board, text="Gerçek ortam", padding=2)
-        self.canvas = tk.Canvas(
-            self.env_frame, width=self.CANVAS_WIDTH, height=self.CANVAS_MIN_HEIGHT,
-            background="white", highlightthickness=0,
-        )
-        self.env_legend = ttk.Label(self.env_frame, text=environment_legend_text(),
-                                    foreground="#555", font=("Segoe UI", 8))
-        self.env_legend.bind("<Configure>", lambda e: self.env_legend.configure(wraplength=max(120, e.width - 4)))
+        self.env_frame, body = theme.card(self.board, 12, self.scale)
+        header, self.env_count = self._panel_header(body, "environment", "Gerçek ortam")
+        header.pack(side="top", fill="x")
+        self.canvas = tk.Canvas(body, width=self.CANVAS_WIDTH, height=self.CANVAS_MIN_HEIGHT,
+                                background=card_bg, highlightthickness=0, **theme.tk_options())
+        self.env_legend = LegendText(body, self.scale)
         self.env_legend.pack(side="bottom", fill="x")
-        self.canvas.pack(fill="both", expand=True)
+        self.canvas.pack(fill="both", expand=True, pady=(self._px(6), 0))
 
-        self.model_frame = ttk.LabelFrame(self.board, text=MODEL_PANEL_TITLE, padding=2)
-        self.model_canvas = tk.Canvas(
-            self.model_frame, width=self.CANVAS_WIDTH // 2, height=self.CANVAS_MIN_HEIGHT,
-            background="white", highlightthickness=0,
-        )
-        self.model_legend_var = tk.StringVar()
-        self.model_legend = ttk.Label(self.model_frame, textvariable=self.model_legend_var,
-                                      foreground="#555", font=("Segoe UI", 8))
-        self.model_note = ttk.Label(self.model_frame, text=TWO_ROOM_MODEL_NOTE,
-                                    foreground="#9a5b13", font=("Segoe UI", 8))
-        for label in (self.model_legend, self.model_note):
-            label.bind("<Configure>", lambda e, w=label: w.configure(wraplength=max(120, e.width - 4)))
+        self.model_frame, body = theme.card(self.board, 12, self.scale)
+        header, self.model_count = self._panel_header(body, "model", MODEL_PANEL_NAME, MODEL_PANEL_NOTE)
+        self.model_title = header.title
+        header.pack(side="top", fill="x")
+        self.model_canvas = tk.Canvas(body, width=self.CANVAS_WIDTH // 2, height=self.CANVAS_MIN_HEIGHT,
+                                      background=card_bg, highlightthickness=0, **theme.tk_options())
+        self.model_legend = LegendText(body, self.scale)
+        self.model_note = ttk.Label(body, text=TWO_ROOM_MODEL_NOTE, style="Warn.TLabel")
+        self.model_note.bind("<Configure>", lambda e: self.model_note.configure(wraplength=max(120, e.width - 4)))
         self.model_legend.pack(side="bottom", fill="x")
-        self.model_canvas.pack(side="top", fill="both", expand=True)
+        self.model_canvas.pack(side="top", fill="both", expand=True, pady=(self._px(6), 0))
 
         self.env_frame.grid(row=0, column=0, sticky="nsew")
-        self.model_frame.grid(row=0, column=1, sticky="nsew", padx=(8, 0))
+        self.model_frame.grid(row=0, column=1, sticky="nsew")
         self.model_frame.grid_remove()
 
         # Pencere yeniden boyutlandırıldığında yerleşim ve grid yeniden hesaplanır.
         self.board.bind("<Configure>", lambda _event: self._layout_board())
         self.canvas.bind("<Configure>", lambda _event: self._draw())
         self.model_canvas.bind("<Configure>", lambda _event: self._draw())
+
+    def _panel_header(self, parent, icon, title, note=None):
+        """Kart başlığı ve sağda oda sayısı: ``(çerçeve, sayı etiketi)``."""
+        frame = ttk.Frame(parent, style="Card.TFrame")
+        frame.title = self._section_title(frame, icon, title, note)
+        frame.title.pack(side="left")
+        count = ttk.Label(frame, style="CardNote.TLabel")
+        count.pack(side="right")
+        return frame, count
 
     def _layout_board(self):
         """Panelleri yerleştirir.
@@ -472,22 +545,26 @@ class VacuumApp:
             return
         self._board_layout = layout
         for index in range(2):
-            self.board.columnconfigure(index, weight=0, minsize=0)
+            self.board.columnconfigure(index, weight=0, minsize=0, uniform="")
             self.board.rowconfigure(index, weight=0)
+        half_gap = self._px(theme.SPACING["gap"]) // 2
         if not model_visible:
             self.board.columnconfigure(0, weight=1)
             self.board.rowconfigure(0, weight=1)
+            self.env_frame.grid_configure(padx=0)
         elif side_by_side:
-            self.board.columnconfigure(0, weight=3)
-            # Panel başlığı dar pencerede de tam okunabilsin.
-            self.board.columnconfigure(1, weight=2, minsize=round(300 * self.scale))
+            # İki kart eşit genişlikte; panel başlığı dar pencerede de okunabilsin.
+            self.board.columnconfigure(0, weight=1, uniform="panels")
+            self.board.columnconfigure(1, weight=1, uniform="panels", minsize=round(300 * self.scale))
             self.board.rowconfigure(0, weight=1)
-            self.model_frame.grid_configure(row=0, column=1, padx=(8, 0), pady=0)
+            self.env_frame.grid_configure(padx=(0, half_gap))
+            self.model_frame.grid_configure(row=0, column=1, padx=(half_gap, 0), pady=0)
         else:
             self.board.columnconfigure(0, weight=1)
-            self.board.rowconfigure(0, weight=3)
-            self.board.rowconfigure(1, weight=2)
-            self.model_frame.grid_configure(row=1, column=0, padx=0, pady=(6, 0))
+            self.board.rowconfigure(0, weight=1)
+            self.env_frame.grid_configure(padx=0)
+            self.board.rowconfigure(1, weight=1)
+            self.model_frame.grid_configure(row=1, column=0, padx=0, pady=(self._px(8), 0))
 
     def _build_status(self):
         self.status_var = tk.StringVar()
@@ -502,7 +579,7 @@ class VacuumApp:
         frame.columnconfigure(0, weight=1)
         frame.rowconfigure(0, weight=1)
 
-        self.log_text = tk.Text(frame, height=8, wrap="none", font=("Consolas", 10), state="disabled")
+        self.log_text = tk.Text(frame, height=4, wrap="none", font=("Consolas", 10), state="disabled")
         scrollbar = ttk.Scrollbar(frame, orient="vertical", command=self.log_text.yview)
         x_scrollbar = ttk.Scrollbar(frame, orient="horizontal", command=self.log_text.xview)
         self.log_text.configure(yscrollcommand=scrollbar.set, xscrollcommand=x_scrollbar.set)
@@ -867,6 +944,9 @@ class VacuumApp:
     def _draw(self):
         grid, env, agent_type = self._displayed()
         plan = self._displayed_plan(env)
+        count = f"{grid.rows} × {grid.cols} oda"
+        self.env_count.configure(text=count)
+        self.env_legend.set_items(environment_legend_items(agent_has_plan(agent_type)))
         self._draw_environment(grid, env, plan)
         show_model = agent_has_model(agent_type)
         if show_model != (self.model_frame.winfo_manager() == "grid"):
@@ -880,12 +960,14 @@ class VacuumApp:
                 self.model_note.pack(side="bottom", fill="x", before=self.model_legend)
             else:
                 self.model_note.pack_forget()
+            self.model_count.configure(text=count)
+            self.model_legend.set_items(model_legend_items(stale_threshold(grid), agent_has_plan(agent_type)),
+                                        MODEL_AGE_NOTE)
             self._draw_model(grid, self._displayed_snapshot(env), plan)
 
     def _draw_model(self, grid, snapshot, plan=None):
         """İç modeli çizer. Yalnızca ``snapshot`` ve ``plan`` kopyaları kullanılır; ortam okunmaz."""
         threshold = stale_threshold(grid)
-        self.model_legend_var.set(model_legend_text(threshold))
         draw_model(self.model_canvas, grid, snapshot, plan, threshold,
                    (self.CANVAS_WIDTH // 2, self.CANVAS_HEIGHT))
 

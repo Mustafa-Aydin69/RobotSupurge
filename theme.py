@@ -220,6 +220,15 @@ def widget_options(bootstyle):
     return {"bootstyle": bootstyle} if bootstrap_available() else {}
 
 
+def tk_options():
+    """Düz Tk bileşenleri (Frame, Label, Canvas, Text) için ek seçenek.
+
+    ttkbootstrap, düz Tk bileşenlerine kendi zemin ve kenarlık rengini verir;
+    renkleri bu modül belirlediği için bu otomatik biçimleme kapatılır.
+    """
+    return {"autostyle": False} if bootstrap_available() else {}
+
+
 def button_text(symbol_key, text):
     """Düğme metni: varsa simge + metin, yoksa yalnızca metin."""
     if text_only() or symbol_key not in BUTTON_SYMBOLS:
@@ -348,7 +357,7 @@ def card(parent, padding, scale=1.0):
     from tkinter import ttk
 
     outer = tk.Frame(parent, background=COLORS["card"], highlightthickness=1, bd=0,
-                     highlightbackground=COLORS["border"], highlightcolor=COLORS["border"])
+                     highlightbackground=COLORS["border"], highlightcolor=COLORS["border"], **tk_options())
     body = ttk.Frame(outer, style="Card.TFrame", padding=px(padding, scale))
     body.pack(fill="both", expand=True)
     return outer, body
@@ -366,4 +375,4 @@ def icon_label(parent, name, background, size=13, foreground=None):
     if family is None:
         return None
     return tk.Label(parent, text=ICON_GLYPHS[name], font=(family, size), background=background,
-                    foreground=foreground or COLORS["primary"], borderwidth=0)
+                    foreground=foreground or COLORS["primary"], borderwidth=0, **tk_options())

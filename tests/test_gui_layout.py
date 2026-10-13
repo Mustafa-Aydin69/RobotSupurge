@@ -68,6 +68,50 @@ class HeaderAndSettingsTests(LayoutTestCase):
         self.assertIsNone(app.simulation.seed)
 
 
+class BoardTests(LayoutTestCase):
+    def test_panel_cards_show_titles_and_room_count(self):
+        app = self.app
+        app.agent_var.set("Model Tabanlı Ajan")
+        app.rows_var.set("3")
+        app.cols_var.set("4")
+        self.root.update()
+        self.assertEqual(app.env_count["text"], "3 × 4 oda")
+        self.assertEqual(app.model_count["text"], "3 × 4 oda")
+        self.assertEqual(app.model_title.title_label["text"], "Ajanın iç modeli")
+        self.assertEqual(app.model_title.note_label["text"], "(gerçek durum değil)")
+
+    def test_side_by_side_cards_have_equal_width(self):
+        app = self.app
+        app.agent_var.set("Amaç Tabanlı Ajan")
+        self.show("1400x760")
+        self.assertEqual(int(app.model_frame.grid_info()["column"]), 1)
+        self.assertLessEqual(abs(app.env_frame.winfo_width() - app.model_frame.winfo_width()), 2)
+
+    def test_legend_lists_items_with_color_swatches(self):
+        app = self.app
+        app.agent_var.set("Model Tabanlı Ajan")
+        self.show("1400x760")
+        swatches = [tag for tag in app.model_legend.tag_names() if tag.startswith("swatch-")]
+        self.assertGreaterEqual(len(swatches), 4)
+        self.assertGreaterEqual(int(app.model_legend["height"]), 2)      # öğeler + yaş notu
+
+    def test_legend_grows_when_narrow(self):
+        app = self.app
+        app.agent_var.set("Amaç Tabanlı Ajan")
+        self.show("1400x760")
+        wide = int(app.model_legend["height"])
+        self.show("900x760")                        # yan yana, daha dar kartlar
+        self.assertGreater(int(app.model_legend["height"]), wide)
+
+    def test_plain_tk_widgets_keep_theme_colors(self):
+        """ttkbootstrap düz Tk bileşenlerinin rengini değiştirmemeli."""
+        app = self.app
+        self.assertEqual(str(app.env_legend["background"]), theme.COLORS["card"])
+        self.assertEqual(int(app.env_legend["highlightthickness"]), 0)
+        self.assertEqual(str(app.shortcut_badge["background"]), theme.COLORS["badge_bg"])
+        self.assertEqual(str(app.canvas["background"]), theme.COLORS["card"])
+
+
 class ControlTests(LayoutTestCase):
     def test_buttons_keep_their_words(self):
         app = self.app
@@ -97,23 +141,33 @@ class ControlTests(LayoutTestCase):
             self.assertEqual(str(app.start_button.cget("style")), "Start.TButton")
         self.assertEqual(str(app.stop_button.cget("style")), "Stop.TButton")
 
+    def relayout(self, geometry, compact_height):
+        """Ekran yüksekliğinden bağımsız sınamak için sıkı yerleşim eşiği değiştirilir."""
+        with mock.patch("gui.COMPACT_HEIGHT", compact_height):
+            self.show(geometry)
+            self.app._density = None
+            self.app._update_density()
+            self.root.update()
+
     def test_shortcut_badge_moves_or_folds_into_note(self):
         app = self.app
-        self.show("1440x820")
+        self.relayout("1440x760", 300)
         self.assertEqual(int(app.shortcut_badge.grid_info()["row"]), 0, "Geniş: düğmelerle aynı satırda")
-        self.show("700x900")
+        self.relayout("700x760", 300)
         self.assertEqual(int(app.shortcut_badge.grid_info()["row"]), 1, "Dar ve uzun: düğmelerin altında")
-        self.show("700x620")
+        self.relayout("700x620", 900)
         self.assertEqual(app.shortcut_badge.winfo_manager(), "", "Dar ve alçak: rozet gizli")
         self.assertIn(SHORTCUTS_TEXT, str(app.settings_note["text"]))
         self.assertTrue(app.start_button.winfo_ismapped())
 
-    def test_subtitle_hidden_only_in_low_window(self):
+    def test_subtitle_moves_next_to_title_in_low_window(self):
         app = self.app
-        self.show("1200x900")
+        self.relayout("1200x760", 300)
+        self.assertEqual(int(app.subtitle.grid_info()["row"]), 1, "Ferah: başlığın altında")
+        self.relayout("1200x640", 900)
+        self.assertEqual(int(app.subtitle.grid_info()["row"]), 0, "Sıkı: başlığın yanında")
         self.assertTrue(app.subtitle.winfo_ismapped())
-        self.show("1200x640")
-        self.assertFalse(app.subtitle.winfo_ismapped())
+        self.assertLess(int(app.logo["height"]), app._px(52))
 
 
 if __name__ == "__main__":
