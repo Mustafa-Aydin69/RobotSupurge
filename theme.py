@@ -246,7 +246,6 @@ def setup(root, scale=1.0):
     """
     from tkinter import ttk
 
-    root.configure(background=COLORS["page"])
     if bootstrap_available():
         from ttkbootstrap.publisher import Publisher
         from ttkbootstrap.style import Style, ThemeDefinition
@@ -265,6 +264,9 @@ def setup(root, scale=1.0):
         style.theme_use("clam")
         _configure_plain_ttk(style)
     _configure_custom_styles(style, scale)
+    # ttkbootstrap tema uygulanırken pencere zeminini tema rengine çeker;
+    # sayfa zemini bu yüzden en son verilir.
+    root.configure(background=COLORS["page"])
     return style
 
 
