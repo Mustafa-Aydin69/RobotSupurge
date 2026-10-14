@@ -167,9 +167,9 @@ class CompareWindow:
         frame = ttk.Frame(parent, style="Card.TFrame")
         frame.pack(side="top", fill="x", pady=(theme.px(12, self.scale), 0))
         self.start_button = ttk.Button(frame, text=theme.button_text("start", "Başlat"), command=self.start,
-                                       width=12, **theme.button_options("primary"))
+                                       width=-12, **theme.button_options("primary"))
         self.cancel_button = ttk.Button(frame, text=theme.button_text("stop", "İptal"), command=self.cancel,
-                                        width=12, **theme.button_options("danger"))
+                                        width=-12, **theme.button_options("danger"))
         self.start_button.pack(side="left")
         self.cancel_button.pack(side="left", padx=(theme.px(10, self.scale), 0))
         self.progress = ttk.Progressbar(frame, length=theme.px(220, self.scale), mode="determinate",

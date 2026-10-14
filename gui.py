@@ -491,12 +491,12 @@ class VacuumApp:
 
         # Düğmeler odak almaz; böylece Boşluk tuşu yalnızca kısayol olarak çalışır.
         self.start_button = ttk.Button(buttons, text=theme.button_text("start", "Başlat"), command=self.start,
-                                       takefocus=False, width=12, **theme.button_options("primary"))
+                                       takefocus=False, width=-12, **theme.button_options("primary"))
         self.pause_button = ttk.Button(buttons, text=theme.button_text("pause", "Duraklat"),
-                                       command=self.toggle_pause, takefocus=False, width=12,
+                                       command=self.toggle_pause, takefocus=False, width=-12,
                                        **theme.button_options("secondary"))
         self.stop_button = ttk.Button(buttons, text=theme.button_text("stop", "Durdur"), command=self.stop,
-                                      takefocus=False, width=12, **theme.button_options("danger"))
+                                      takefocus=False, width=-12, **theme.button_options("danger"))
         self.compare_button = ttk.Button(buttons, text=theme.button_text("compare", "Ajanları Karşılaştır"),
                                          command=self.open_comparison, takefocus=False,
                                          **theme.button_options("outline"))

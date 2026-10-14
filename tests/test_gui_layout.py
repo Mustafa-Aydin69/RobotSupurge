@@ -312,6 +312,27 @@ class ControlTests(LayoutTestCase):
             with self.subTest(word=word):
                 self.assertTrue(str(button["text"]).endswith(word))
 
+    def test_button_texts_are_not_clipped(self):
+        """Simge ve metin düğmeye sığar (düğme genişliği yalnızca en küçük değerdir)."""
+        from tkinter import font as tkfont
+        app = self.app
+        self.show("1440x800")
+
+        def check(button):
+            style = str(button.cget("style")) or "TButton"
+            spec = app.style.lookup(style, "font") or "TkDefaultFont"
+            padding = [int(self.root.winfo_fpixels(v)) for v in self.root.tk.splitlist(
+                app.style.lookup(style, "padding") or "0")] or [0]
+            needed = tkfont.Font(root=self.root, font=spec).measure(str(button["text"])) + 2 * padding[0]
+            self.assertGreaterEqual(button.winfo_reqwidth(), needed, button["text"])
+
+        for button in (app.start_button, app.pause_button, app.stop_button, app.compare_button,
+                       app.clear_log_button):
+            check(button)
+        app.start()
+        app.toggle_pause()                                   # "Devam"
+        check(app.pause_button)
+
     def test_text_only_mode_has_no_symbols(self):
         self.app.on_close()
         with mock.patch.dict(os.environ, {theme.PLAIN_TEXT_ENV: "1"}):
