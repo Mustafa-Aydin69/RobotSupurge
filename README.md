@@ -174,9 +174,27 @@ yeniden seçilir; aksi halde her adımda değiştirilmez. Yeni plan ajanın kend
 bildiği konumdan çıkarılır, rota yalnızca başarılı bildirilen hareket kadar
 ilerler ve yoldaki kirli oda rotayı değiştirmeden temizlenir.
 
+## Açılış ekranı
+
+Program açıldığında önce açılış ekranı gösterilir: solda robot süpürge
+illüstrasyonu, sağda başlık, kısa açıklama ve iki düğme, altta dört özellik.
+
+| Düğme | İşlev |
+|---|---|
+| **Oyna** (Enter) | Simülasyon ekranını aynı pencerede açar. |
+| **Nasıl Oynanır?** | Rehber ekranını açar: adımlar arasında İleri/Geri, Ana Menü ve Oyna. Rehber şimdilik kısa bir tanıtımdır; bölüm bölüm etkileşimli rehber sonraki sürümde eklenecektir. |
+| **Ana Menü** (simülasyon ekranında, başlığın sağında) | Çalışan simülasyonu durdurur, zamanlayıcıları iptal eder, açık karşılaştırma penceresini kapatır ve açılış ekranına döner. Yeniden Oyna yeni bir oturum açar. |
+
+Bütün ekranlar aynı ana pencerede açılır. İllüstrasyon ve simgeler referans
+tasarımdan kırpılmış görsellerdir (`assets/welcome/`); kaynak koda
+`welcome_assets.py` olarak gömülüdür ve `python -m tools.make_welcome_assets`
+ile yeniden üretilir. Başlık, açıklama ve düğmeler gerçek arayüz
+bileşenleridir. Dar pencerede illüstrasyon küçülerek üste geçer, özellikler iki
+satıra iner; düğmeler her boyutta görünür kalır.
+
 ## Arayüz rehberi
 
-Pencere yukarıdan aşağıya altı bölümden oluşur: başlık, **Ayarlar** kartı
+Simülasyon ekranı yukarıdan aşağıya altı bölümden oluşur: başlık, **Ayarlar** kartı
 (ayar alanları ve kontrol düğmeleri), **Gerçek ortam** ve **Ajanın iç modeli**
 kartları, **Simülasyon durumu** kartları ve **Algı ve eylem günlüğü** tablosu.
 Renkler, yazı tipleri ve boşluklar `theme.py`'de tanımlıdır.
@@ -338,11 +356,14 @@ comparison.py       ajan karşılaştırma ölçümleri
 gui.py              Tkinter ana penceresi, kontroller, durum kartları ve günlük
 views.py            tuval çizimleri (gerçek ortam, iç model, hedef ve rota)
 theme.py            arayüz teması: renkler, yazı tipleri, ttkbootstrap stilleri
+welcome.py          açılış ekranı ve "Nasıl Oynanır?" rehberi
+welcome_assets.py   açılış ekranı görselleri (PNG, kaynak koda gömülü)
 timers.py           duraklatılabilen zamanlayıcı
 compare_window.py   ajan karşılaştırma penceresi
 self_test.py        pencere açmadan doğrulama
 tests/              unittest testleri ve referans veriler
-tools/              komut satırı karşılaştırma aracı
+tools/              komut satırı karşılaştırma aracı, açılış görsellerini kırpma betiği
+assets/welcome/     açılış ekranının referans tasarımı ve kırpılmış görseller
 build_exe.bat       Windows EXE derleme betiği
 requirements.txt    arayüz teması bağımlılığı (ttkbootstrap)
 ```
@@ -382,4 +403,5 @@ doğrulanır (`tests/test_submission.py`).
 - [ ] Bütün odalar temizken de ajan dolaşmaya devam ediyor.
 - [ ] Duraklat/Devam (Boşluk) ve Durdur (Esc) çalışıyor; durdurunca süre sabit.
 - [ ] Çok odalı grid (ör. 3×4, 6×6) ve model/amaç tabanlı ajanlar çalışıyor.
-- [ ] `python main.py --self-test` ya da EXE ile `--self-test` 8/8 başarılı (tema satırında "ttkbootstrap 1.14.7").
+- [ ] `python main.py --self-test` ya da EXE ile `--self-test` 9/9 başarılı (tema satırında "ttkbootstrap 1.14.7").
+- [ ] Program açılış ekranıyla açılıyor; Oyna simülasyonu, Ana Menü açılış ekranını açıyor.
