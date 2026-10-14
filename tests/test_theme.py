@@ -80,6 +80,15 @@ class ThemeSetupTests(unittest.TestCase):
         self.assertEqual(style.lookup("Stop.TButton", "foreground"), theme.COLORS["danger"])
         self.assertTrue(style.lookup("Log.Treeview", "rowheight"))
 
+    def test_default_fonts_match_body_font(self):
+        """Düğme ve giriş alanları etiketlerle aynı gövde yazı tipini kullanır."""
+        from tkinter import font as tkfont
+        root = self.make_root()
+        theme.setup(root)
+        default = tkfont.Font(root=root, name="TkDefaultFont", exists=True)
+        self.assertEqual(default.actual("family"), theme.FONT_FAMILY)
+        self.assertEqual(int(default.cget("size")), theme.FONT_SIZES["body"])
+
     def test_setup_works_for_successive_windows(self):
         """Pencere kapatılıp yenisi açıldığında tema yeniden uygulanabilmeli (testler ve yeniden açılış)."""
         from tkinter import ttk

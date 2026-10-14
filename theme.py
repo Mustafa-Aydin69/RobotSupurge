@@ -274,11 +274,23 @@ def setup(root, scale=1.0):
         style = ttk.Style(root)
         style.theme_use("clam")
         _configure_plain_ttk(style)
+    _configure_default_fonts(root)
     _configure_custom_styles(style, scale)
     # ttkbootstrap tema uygulanırken pencere zeminini tema rengine çeker;
     # sayfa zemini bu yüzden en son verilir.
     root.configure(background=COLORS["page"])
     return style
+
+
+def _configure_default_fonts(root):
+    """Tk'nin varsayılan yazı tipleri (düğme, giriş alanı, liste) temanın gövde yazısına eşitlenir."""
+    from tkinter import font as tkfont
+
+    for name in ("TkDefaultFont", "TkTextFont", "TkMenuFont"):
+        try:
+            tkfont.Font(root=root, name=name, exists=True).configure(family=FONT_FAMILY, size=FONT_SIZES["body"])
+        except Exception:  # noqa: BLE001  (yazı tipi bulunamazsa varsayılan kalır)
+            pass
 
 
 def _configure_plain_ttk(style):
