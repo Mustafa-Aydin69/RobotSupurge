@@ -30,8 +30,8 @@ class SelfTestTests(unittest.TestCase):
                 self_test.run_self_test(path)
             with open(path, encoding="utf-8") as handle:
                 text = handle.read()
-        self.assertIn("Sonuç: 8/8 kontrol başarılı.", text)
-        self.assertEqual(text.count("[TAMAM]"), 8)
+        self.assertIn("Sonuç: 9/9 kontrol başarılı.", text)
+        self.assertEqual(text.count("[TAMAM]"), 9)
 
 
     def test_result_is_printed_even_if_console_lacks_turkish_letters(self):
@@ -42,7 +42,7 @@ class SelfTestTests(unittest.TestCase):
             self.assertEqual(self_test.run_self_test(), 0)
         stream.flush()
         output = buffer.getvalue().decode("cp1252")
-        self.assertIn("8/8 kontrol ba?ar?l?.", output)
+        self.assertIn("9/9 kontrol ba?ar?l?.", output)
 
 
 class MainArgumentTests(unittest.TestCase):

@@ -22,6 +22,7 @@
 #   timers.py          duraklatılabilen zamanlayıcı
 #   compare_window.py  ajan karşılaştırma penceresi
 #   self_test.py       --self-test doğrulaması
+#   welcome_assets.py  açılış ekranı görselleri (PNG, kaynak koda gömülü)
 """Uygulamanın giriş noktası."""
 
 import sys

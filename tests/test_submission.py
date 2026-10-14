@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SUBMISSION_FILES = [
     "main.py", "environment.py", "agents.py", "simulation.py", "comparison.py",
     "gui.py", "views.py", "theme.py", "timers.py", "compare_window.py", "self_test.py",
+    "welcome_assets.py",
 ]
 
 

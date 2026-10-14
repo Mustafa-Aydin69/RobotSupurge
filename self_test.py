@@ -102,6 +102,22 @@ def _check_theme():
     return f"Arayüz teması: {theme.theme_description()}"
 
 
+PNG_SIGNATURE = bytes([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])   # "\x89PNG\r\n\x1a\n"
+
+
+def _check_welcome_assets():
+    """Açılış ekranı görselleri pakette mi ve bozulmamış mı? (PNG imzası ve boyutları; pencere açmaz.)"""
+    import base64
+    import struct
+
+    import welcome_assets
+    for name, (width, height) in welcome_assets.SIZES.items():
+        data = base64.b64decode(welcome_assets.PNG[name])
+        assert data[:8] == PNG_SIGNATURE, f"{name}: PNG değil"
+        assert struct.unpack(">II", data[16:24]) == (width, height), f"{name}: boyut uyuşmuyor"
+    return f"açılış ekranı görselleri ({len(welcome_assets.SIZES)} PNG)"
+
+
 CHECKS = [
     _check_reflex_table,
     _check_two_room_simulation,
@@ -111,6 +127,7 @@ CHECKS = [
     _check_comparison,
     _check_tkinter_available,
     _check_theme,
+    _check_welcome_assets,
 ]
 
 

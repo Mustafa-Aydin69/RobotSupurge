@@ -360,6 +360,7 @@ olmalıdır):
 ```
 main.py  environment.py  agents.py  simulation.py  comparison.py
 gui.py  views.py  theme.py  timers.py  compare_window.py  self_test.py
+welcome_assets.py
 ```
 
 Arayüz teması için gereken paket `main.py`'nin başındaki açıklamada yazılıdır
@@ -367,7 +368,7 @@ Arayüz teması için gereken paket `main.py`'nin başındaki açıklamada yazı
 ttkbootstrap kurulu değilse program standart ttk temasıyla aynı işlevlerle çalışır.
 
 EXE dosyaları, `tests/`, `tools/`, `build_exe.bat` ve README teslime dahil
-edilmez; GitHub reposunda korunur. Bu on bir dosyanın eksiksiz olduğu bir testle
+edilmez; GitHub reposunda korunur. Bu on iki dosyanın eksiksiz olduğu bir testle
 doğrulanır (`tests/test_submission.py`).
 
 ## Teslim öncesi kontrol listesi
