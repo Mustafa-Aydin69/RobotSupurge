@@ -307,7 +307,17 @@ class WindowTests(unittest.TestCase):
         self.root.mainloop()
 
     def log_lines(self):
-        return self.app.log_text.get("1.0", "end").strip().splitlines()
+        """Günlük tablosunun satırları, Faz 5'teki metin biçimine çevrilmiş olarak."""
+        lines = []
+        for kind, (step, elapsed, room, percept, action, note) in self.app.log_entries():
+            if kind == "step":
+                lines.append(f"Adım {int(step):>4} | Süre: {elapsed} | Oda: {room} | Algı: {percept} | "
+                             f"Eylem: {action}")
+            elif kind == "dirt":
+                lines.append(f"Kirlenme  | Süre: {elapsed} | {room} odası kirlendi")
+            else:                                   # hedef ("Hedef: …") ve bilgi satırları
+                lines.append(note)
+        return lines
 
     def test_full_user_flow(self):
         app = self.app
@@ -519,7 +529,7 @@ class WindowTests(unittest.TestCase):
                 self.assertLessEqual(y1, height + 2)
                 # Kontroller ve günlük görünür kalmalı.
                 self.assertTrue(app.start_button.winfo_ismapped())
-                self.assertTrue(app.log_text.winfo_ismapped())
+                self.assertTrue(app.log_table.winfo_ismapped())
 
     def test_agent_type_selection_creates_matching_agent(self):
         from agents import ModelBasedAgent, ReflexAgent
@@ -664,7 +674,7 @@ class WindowTests(unittest.TestCase):
             self.assertEqual(int(app.model_frame.grid_info()["row"]), 1)
             self.assertEqual(int(app.model_frame.grid_info()["column"]), 0)
         self.assertTrue(app.start_button.winfo_ismapped())
-        self.assertTrue(app.log_text.winfo_ismapped())
+        self.assertTrue(app.log_table.winfo_ismapped())
 
     def test_status_line_is_shown_at_startup(self):
         self.assertIn("Hazır", self.app.status_summary())
@@ -843,7 +853,7 @@ class WindowTests(unittest.TestCase):
         app.toggle_pause()
         app._draw()
         self.root.update()
-        for widget in (app.start_button, app.pause_button, app.stop_button, app.log_text):
+        for widget in (app.start_button, app.pause_button, app.stop_button, app.log_table):
             self.assertTrue(widget.winfo_ismapped())
         self.assertEqual(len(app.model_canvas.find_withtag("plan-target")), 1)
         x0, y0, x1, y1 = app.model_canvas.bbox("plan-target")
@@ -928,7 +938,7 @@ class WindowTests(unittest.TestCase):
         app.dirt_timer.cancel()
         with mock.patch("gui.MAX_LOG_LINES", 50):
             for _ in range(130):
-                app._append_log(format_record(app.simulation.step()))
+                app._log_record(app.simulation.step())
         lines = self.log_lines()
         self.assertEqual(len(lines), 51)                    # 50 kayıt + 1 bilgi satırı
         self.assertIn("Eski kayıtlar ekrandan kaldırıldı", lines[0])
@@ -941,7 +951,7 @@ class WindowTests(unittest.TestCase):
         self.assertNotIn("kaldırıldı", self.log_text_all())
 
     def log_text_all(self):
-        return self.app.log_text.get("1.0", "end")
+        return "\n".join(self.log_lines())
 
     def test_autoscroll_respects_user_position(self):
         app = self.app
@@ -953,18 +963,18 @@ class WindowTests(unittest.TestCase):
         for i in range(200):
             app._append_log(f"satır {i}")
         self.root.update()
-        self.assertGreaterEqual(app.log_text.yview()[1], 0.999, "En alttayken takip etmeli")
-        app.log_text.yview_moveto(0.0)
+        self.assertGreaterEqual(app.log_table.yview()[1], 0.999, "En alttayken takip etmeli")
+        app.log_table.yview_moveto(0.0)
         self.root.update()
         for i in range(50):
             app._append_log(f"yeni {i}")
         self.root.update()
-        self.assertEqual(app.log_text.yview()[0], 0.0, "Geçmişe bakan kullanıcının görünümü korunmalı")
-        app.log_text.yview_moveto(1.0)
+        self.assertEqual(app.log_table.yview()[0], 0.0, "Geçmişe bakan kullanıcının görünümü korunmalı")
+        app.log_table.yview_moveto(1.0)
         self.root.update()
         app._append_log("son")
         self.root.update()
-        self.assertGreaterEqual(app.log_text.yview()[1], 0.999)
+        self.assertGreaterEqual(app.log_table.yview()[1], 0.999)
 
     def test_log_stays_at_bottom_when_its_area_shrinks(self):
         """Pencere küçülünce son kaydı izleyen günlük en altta kalır; geçmişe bakanınki korunur."""
@@ -979,12 +989,12 @@ class WindowTests(unittest.TestCase):
             app._append_log(f"satır {i}")
         self.root.geometry("1000x700")
         self.root.update()
-        self.assertGreaterEqual(app.log_text.yview()[1], 0.999)
-        app.log_text.yview_moveto(0.0)
+        self.assertGreaterEqual(app.log_table.yview()[1], 0.999)
+        app.log_table.yview_moveto(0.0)
         app._update_log_following()
         self.root.geometry("1000x780")
         self.root.update()
-        self.assertEqual(app.log_text.yview()[0], 0.0)
+        self.assertEqual(app.log_table.yview()[0], 0.0)
 
     def test_autoscroll_continues_while_window_hidden(self):
         app = self.app                                       # pencere gizli (withdraw)
@@ -995,7 +1005,7 @@ class WindowTests(unittest.TestCase):
             app._append_log(f"satır {i}")
         self.root.deiconify()
         self.root.update()
-        self.assertGreaterEqual(app.log_text.yview()[1], 0.999, "Gizliyken eklenen satırlar takip edilmeli")
+        self.assertGreaterEqual(app.log_table.yview()[1], 0.999, "Gizliyken eklenen satırlar takip edilmeli")
 
     def test_stale_cells_have_hatch_pattern_and_label(self):
         app = self.app

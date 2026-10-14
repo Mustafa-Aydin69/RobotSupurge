@@ -14,6 +14,7 @@ o süreden devam eder.
 
 import sys
 import tkinter as tk
+from collections import deque
 from tkinter import messagebox, ttk
 
 from agents import AGENT_TYPES, DEFAULT_AGENT_TYPE, GOAL_DIRTY, GOAL_EXPLORE, GOAL_UNKNOWN
@@ -37,10 +38,11 @@ DEFAULT_DIRT_SECONDS = 3.0
 CLOCK_REFRESH_MS = 200          # süre göstergesinin yenilenme aralığı
 SIDE_BY_SIDE_MIN_WIDTH = 760    # iki panelin yan yana dizildiği en küçük tahta genişliği
 PANEL_MIN_HEIGHT = 230          # alt alta dizilen bir panelin en küçük yüksekliği
-LEGEND_MIN_PANEL_HEIGHT = 280   # açıklama satırının gösterildiği en küçük kart yüksekliği
+LEGEND_MIN_PANEL_HEIGHT = 220   # açıklama satırının gösterildiği en küçük kart yüksekliği
 MAX_LOG_LINES = 10000           # ekrandaki günlüğün en fazla satır sayısı
 LOG_TRIM_NOTICE = ("… Eski kayıtlar ekrandan kaldırıldı ({count} satır). "
                    "Simülasyonun kendi günlüğü eksiksiz korunuyor.")
+LOG_CLEARED_NOTICE = "Günlük ekranı temizlendi; simülasyonun kendi kayıtları korunuyor."
 MIN_DIRT_SECONDS, MAX_DIRT_SECONDS = 0.5, 60.0
 DEFAULT_ROWS, DEFAULT_COLS = 1, 2
 
@@ -74,6 +76,7 @@ FIELD_SHORT_LABELS = {          # alçak ve dar pencerede kullanılan kısa etik
     "Seed (isteğe bağlı)": "Seed",
 }
 SHORTCUTS_TEXT = "Kısayollar: Boşluk = Duraklat/Devam, Esc = Durdur"
+MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT = 680, 720
 COMPACT_HEIGHT = 900            # bu yükseklikten alçak pencerede sıkı yerleşim
 
 # İstatistik kartları: (anahtar, simge, başlık). "known" yalnızca iç modeli
@@ -119,6 +122,38 @@ def format_record(record):
         f"Oda: {record.room} | Algı: {STATUS_TEXT[record.status]} | "
         f"Eylem: {ACTION_TEXT[record.action]}"
     )
+
+
+# Günlük tablosunun sütunları: (anahtar, başlık, genişlik, uzayabilir mi)
+LOG_COLUMNS = (
+    ("step", "Adım", 64, False),
+    ("time", "Süre", 84, False),
+    ("room", "Oda", 110, False),
+    ("percept", "Algı", 84, False),
+    ("action", "Eylem", 110, False),
+    ("note", "Açıklama", 420, True),
+)
+LOG_EMPTY = "–"
+
+
+def record_row(record):
+    """Bir günlük kaydının tablo satırı: ``(tür, değerler)``. Tür "step" ya da "dirt"."""
+    elapsed = format_elapsed(record.elapsed)
+    if isinstance(record, DirtRecord):
+        rooms = ", ".join(record.rooms)
+        return "dirt", (LOG_EMPTY, elapsed, rooms, LOG_EMPTY, LOG_EMPTY, f"Kirlenme: {rooms} odası kirlendi")
+    return "step", (str(record.step), elapsed, record.room, STATUS_TEXT[record.status],
+                     ACTION_TEXT[record.action], LOG_EMPTY)
+
+
+def goal_row(plan, elapsed):
+    """Hedef değişiminin tablo satırı (adım sayılmaz)."""
+    target = plan.target
+    detail = f"{GOAL_KIND_TEXT[target.kind]}, {target.distance} adım"
+    if target.score is not None:
+        detail += f", puan {float(target.score):.2f}"
+    return "goal", (LOG_EMPTY, format_elapsed(elapsed), target.room, LOG_EMPTY, LOG_EMPTY,
+                    f"Hedef: {target.room} ({detail}) — {plan.reason}")
 
 
 def parse_seed(text):
@@ -251,7 +286,7 @@ class VacuumApp:
     CANVAS_WIDTH = 560    # başlangıç boyutu; pencereyle birlikte büyür
     CANVAS_HEIGHT = 240
     CANVAS_MIN_HEIGHT = 120   # tuvalin istediği yükseklik; pencere küçükse günlüğe yer kalır
-    LOG_MIN_HEIGHT = 110      # günlüğün dar pencerede de görünür kalan en küçük yüksekliği
+    LOG_MIN_HEIGHT = 130      # günlüğün dar pencerede de görünür kalan en küçük yüksekliği
 
     def __init__(self, root):
         self.root = root
@@ -274,7 +309,9 @@ class VacuumApp:
         width = min(round(1440 * self.scale), int(root.winfo_screenwidth() * 0.94))
         height = min(round(1040 * self.scale), int(root.winfo_screenheight() * 0.90))
         root.geometry(f"{width}x{height}")
-        root.minsize(min(round(680 * self.scale), width), min(round(620 * self.scale), height))
+        # En küçük boyut: altı bölümün hepsi görünür kalır (ekran daha küçükse ekrana göre).
+        root.minsize(min(round(MIN_WINDOW_WIDTH * self.scale), width),
+                     min(round(MIN_WINDOW_HEIGHT * self.scale), height))
         root.protocol("WM_DELETE_WINDOW", self.on_close)
 
         self._build_header()
@@ -753,40 +790,60 @@ class VacuumApp:
                           for key in self._visible_stats())
 
     def _build_log(self):
-        frame = ttk.LabelFrame(self.root, text="Algı ve eylem günlüğü", padding=4)
-        frame.grid(row=4, column=0, sticky="nsew", padx=10, pady=(4, 10))
-        frame.columnconfigure(0, weight=1)
-        frame.rowconfigure(0, weight=1)
+        """Algı ve eylem günlüğü: sütunlu tablo ve "Ekranı Temizle" düğmesi."""
+        outer, body = theme.card(self.root, 12, self.scale)
+        outer.grid(row=4, column=0, sticky="nsew", padx=self._px(theme.SPACING["page"]),
+                   pady=(0, self._px(theme.SPACING["page"])))
+        body.columnconfigure(0, weight=1)
+        body.rowconfigure(1, weight=1)
+        self.log_card = outer
 
-        self.log_text = tk.Text(frame, height=4, wrap="none", font=("Consolas", 10), state="disabled")
-        scrollbar = ttk.Scrollbar(frame, orient="vertical", command=self.log_text.yview)
-        x_scrollbar = ttk.Scrollbar(frame, orient="horizontal", command=self.log_text.xview)
-        self.log_text.configure(yscrollcommand=scrollbar.set, xscrollcommand=x_scrollbar.set)
-        self.log_text.grid(row=0, column=0, sticky="nsew")
-        scrollbar.grid(row=0, column=1, sticky="ns")
-        x_scrollbar.grid(row=1, column=0, sticky="ew")
+        header = ttk.Frame(body, style="Card.TFrame")
+        header.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, self._px(8)))
+        self._section_title(header, "log", "Algı ve eylem günlüğü").pack(side="left")
+        self.clear_log_button = ttk.Button(header, text=theme.button_text("clear", "Ekranı Temizle"),
+                                           command=self.clear_log_view, takefocus=False,
+                                           **theme.button_options("small"))
+        self.clear_log_button.pack(side="right")
 
-        self.log_text.tag_configure("dirt", foreground="#9a5b13")
-        self.log_text.tag_configure("info", foreground="#1d70b8")
-        self.log_text.tag_configure("goal", foreground=COLOR_GOAL)
+        columns = [key for key, *_ in LOG_COLUMNS]
+        self.log_table = ttk.Treeview(body, columns=columns, show="headings", height=3,
+                                      selectmode="none", style="Log.Treeview", takefocus=False)
+        for key, heading, width, stretch in LOG_COLUMNS:
+            self.log_table.heading(key, text=heading, anchor="w")
+            self.log_table.column(key, width=self._px(width), minwidth=self._px(min(width, 60)),
+                                  stretch=stretch, anchor="w")
+        scrollbar = ttk.Scrollbar(body, orient="vertical", command=self.log_table.yview)
+        x_scrollbar = ttk.Scrollbar(body, orient="horizontal", command=self.log_table.xview)
+        self.log_table.configure(yscrollcommand=scrollbar.set, xscrollcommand=x_scrollbar.set)
+        self.log_table.grid(row=1, column=0, sticky="nsew")
+        scrollbar.grid(row=1, column=1, sticky="ns")
+        x_scrollbar.grid(row=2, column=0, sticky="ew")
 
-        # Günlük alanı yeniden boyutlanınca (ör. pencere ya da durum satırı
+        c = theme.COLORS
+        self.log_table.tag_configure("dirt", foreground=c["row_dirt_fg"], background=c["row_dirt_bg"])
+        self.log_table.tag_configure("goal", foreground=c["row_goal_fg"], background=c["row_goal_bg"])
+        self.log_table.tag_configure("info", foreground=c["row_info_fg"], background=c["row_info_bg"])
+        self._log_rows = deque()        # ekrandaki kayıt satırları (bilgi notu hariç)
+        self._trim_notice = None        # "eski kayıtlar kaldırıldı" satırı
+
+        # Günlük alanı yeniden boyutlanınca (ör. pencere ya da durum kartları
         # değişince) en son kaydı izleyen görünüm en altta kalır. Kullanıcı
         # kaydırınca takip durumu kullanıcının konumuna göre güncellenir.
-        self.log_text.bind("<Configure>", lambda _e: self._keep_log_position())
-        for widget, sequences in ((self.log_text, ("<MouseWheel>", "<Prior>", "<Next>", "<Control-End>",
-                                                   "<Control-Home>")),
+        self.log_table.bind("<Configure>", lambda _e: self._keep_log_position())
+        for widget, sequences in ((self.log_table, ("<MouseWheel>", "<Prior>", "<Next>", "<Up>", "<Down>",
+                                                    "<Home>", "<End>")),
                                   (scrollbar, ("<ButtonRelease-1>",))):
             for sequence in sequences:
                 widget.bind(sequence, lambda _e: self.root.after_idle(self._update_log_following), add="+")
 
     def _update_log_following(self):
-        if self.log_text.winfo_exists():
-            self._log_following = self.log_text.yview()[1] >= 0.999
+        if self.log_table.winfo_exists():
+            self._log_following = self.log_table.yview()[1] >= 0.999
 
     def _keep_log_position(self):
         if self._log_following:
-            self.log_text.yview_moveto(1.0)
+            self.log_table.yview_moveto(1.0)
 
     # ------------------------------------------------------------------
     # Kullanıcı komutları
@@ -920,7 +977,7 @@ class VacuumApp:
             return
         record = self.simulation.step()
         self._last_action = record.action
-        self._append_log(format_record(record))
+        self._log_record(record)
         self._log_goal_change()
         self._refresh()
         self.step_timer.start(self._read_step_ms())
@@ -931,7 +988,7 @@ class VacuumApp:
             return
         plan = self.simulation.agent.plan_snapshot()
         if plan.version != self._last_plan_version and plan.target is not None:
-            self._append_log(format_goal_change(plan), "goal")
+            self._add_log_row(*goal_row(plan, self.simulation.elapsed))
         self._last_plan_version = plan.version
 
     def _on_dirt_timer(self):
@@ -939,7 +996,7 @@ class VacuumApp:
             return
         record = self.simulation.dirty_tick()
         if record is not None:
-            self._append_log(format_record(record), "dirt")
+            self._log_record(record)
             self._refresh()
         self.dirt_timer.start(self._read_dirt_ms())
 
@@ -997,49 +1054,64 @@ class VacuumApp:
     # ------------------------------------------------------------------
     # Günlük
     # ------------------------------------------------------------------
-    def _append_log(self, line, tag=None):
+    def _append_log(self, message, kind="info"):
+        """Bilgi satırı ekler (ör. "Simülasyon duraklatıldı."); açıklama sütununda gösterilir."""
+        elapsed = format_elapsed(self.simulation.elapsed) if self.simulation is not None else ""
+        self._add_log_row(kind, ("", elapsed, "", "", "", message))
+
+    def _log_record(self, record):
+        """Simülasyon kaydını (adım ya da kirlenme) tabloya ekler."""
+        self._add_log_row(*record_row(record))
+
+    def _add_log_row(self, kind, values):
         """Satır ekler; ekranda en fazla MAX_LOG_LINES kayıt tutar.
 
         Otomatik kaydırma yalnızca kullanıcı zaten en alttaysa yapılır; geçmiş
         kayıtlara bakan kullanıcının görünümü korunur.
         """
-        text = self.log_text
+        table = self.log_table
         # Pencere görünür değilken (ör. simge durumunda) kaydırma konumu
         # güvenilir değildir; bu durumda takip sürdürülür.
-        at_bottom = not text.winfo_viewable() or text.yview()[1] >= 0.999
-        text.configure(state="normal")
-        text.insert("end", line + "\n", tag or ())
+        at_bottom = not table.winfo_viewable() or table.yview()[1] >= 0.999
+        self._log_rows.append(table.insert("", "end", values=values, tags=(kind,)))
         self._trim_log()
-        text.configure(state="disabled")
         self._log_following = at_bottom
         if at_bottom:
-            # see("end") son satır kısmen görünürken kaydırmayabilir; tam alta inilir.
-            text.yview_moveto(1.0)
+            table.yview_moveto(1.0)
 
     def _log_line_count(self):
         """Ekrandaki kayıt sayısı (kaldırma bilgisi satırı hariç)."""
-        lines = int(self.log_text.index("end-1c").split(".")[0]) - 1
-        return lines - (1 if self._log_trimmed else 0)
+        return len(self._log_rows)
 
     def _trim_log(self):
-        excess = self._log_line_count() - MAX_LOG_LINES
+        excess = len(self._log_rows) - MAX_LOG_LINES
         if excess <= 0:
             return
-        text = self.log_text
-        first = 2 if self._log_trimmed else 1    # bilgi satırı en üstte kalır
-        text.delete(f"{first}.0", f"{first + excess}.0")
+        self.log_table.delete(*[self._log_rows.popleft() for _ in range(excess)])
         self._log_trimmed += excess
-        notice = LOG_TRIM_NOTICE.format(count=self._log_trimmed) + "\n"
-        if first == 2:
-            text.delete("1.0", "2.0")
-        text.insert("1.0", notice, "info")
+        values = ("", "", "", "", "", LOG_TRIM_NOTICE.format(count=self._log_trimmed))
+        if self._trim_notice is None:            # bilgi satırı en üstte kalır
+            self._trim_notice = self.log_table.insert("", 0, values=values, tags=("info",))
+        else:
+            self.log_table.item(self._trim_notice, values=values)
 
     def _clear_log(self):
-        self.log_text.configure(state="normal")
-        self.log_text.delete("1.0", "end")
-        self.log_text.configure(state="disabled")
+        self.log_table.delete(*self.log_table.get_children())
+        self._log_rows.clear()
+        self._trim_notice = None
         self._log_trimmed = 0
         self._log_following = True
+
+    def clear_log_view(self):
+        """"Ekranı Temizle": yalnızca ekrandaki satırları siler; simülasyonun günlüğüne dokunmaz."""
+        self._clear_log()
+        self._append_log(LOG_CLEARED_NOTICE)
+
+    def log_entries(self):
+        """Ekrandaki satırlar: ``[(tür, değerler), …]`` (test ve inceleme için)."""
+        table = self.log_table
+        return [(table.item(iid, "tags")[0], tuple(str(v) for v in table.item(iid, "values")))
+                for iid in table.get_children()]
 
     # ------------------------------------------------------------------
     # Görünüm güncelleme

@@ -219,6 +219,91 @@ class StatsTests(LayoutTestCase):
         self.assertTrue(app.status_title.winfo_ismapped())
 
 
+class LogTableTests(LayoutTestCase):
+    def run_steps(self, count, agent="Basit Refleks Ajan", rows="1", cols="2", seed="3"):
+        app = self.app
+        app.agent_var.set(agent)
+        app.rows_var.set(rows)
+        app.cols_var.set(cols)
+        app.seed_var.set(seed)
+        app.start()
+        app.step_timer.cancel()
+        app.dirt_timer.cancel()
+        for _ in range(count):
+            app._on_step_timer()
+            app.step_timer.cancel()
+        return app
+
+    def test_columns(self):
+        table = self.app.log_table
+        headings = [table.heading(column, "text") for column in table["columns"]]
+        self.assertEqual(headings, ["Adım", "Süre", "Oda", "Algı", "Eylem", "Açıklama"])
+
+    def test_step_dirt_goal_and_info_rows(self):
+        app = self.run_steps(6, agent="Amaç Tabanlı Ajan", rows="3", cols="3", seed="8")
+        record = app.simulation.dirty_tick()
+        if record is not None:
+            app._log_record(record)
+        entries = app.log_entries()
+        kinds = {kind for kind, _ in entries}
+        self.assertEqual(entries[0][0], "info")                      # "Simülasyon başladı …"
+        self.assertIn("step", kinds)
+        self.assertIn("goal", kinds)
+        steps = [values for kind, values in entries if kind == "step"]
+        self.assertEqual([int(v[0]) for v in steps], list(range(1, len(steps) + 1)))
+        last = [r for r in app.simulation.log if hasattr(r, "action")][-1]
+        self.assertEqual(steps[-1][2], last.room)
+        self.assertIn(steps[-1][3], ("Temiz", "Kirli"))
+        if record is not None:
+            kind, values = entries[-1]
+            self.assertEqual(kind, "dirt")
+            self.assertIn("Kirlenme", values[5])
+        goal = next(values for kind, values in entries if kind == "goal")
+        self.assertTrue(goal[5].startswith("Hedef: "))
+        self.assertEqual(goal[0], "–", "Hedef satırı adım sayılmaz")
+
+    def test_row_kinds_have_distinct_looks(self):
+        table = self.app.log_table
+        looks = {kind: (str(table.tag_configure(kind, "foreground")), str(table.tag_configure(kind, "background")))
+                 for kind in ("dirt", "goal", "info")}
+        self.assertEqual(len(set(looks.values())), 3)
+        self.assertEqual(str(looks["dirt"][0]), theme.COLORS["row_dirt_fg"])
+
+    def test_clear_view_keeps_simulation_log(self):
+        app = self.run_steps(8)
+        log_before = list(app.simulation.log)
+        steps = app.simulation.step_count
+        app.clear_log_view()
+        entries = app.log_entries()
+        self.assertEqual(len(entries), 1)
+        self.assertIn("temizlendi", entries[0][1][5])
+        self.assertEqual(app.simulation.log, log_before)            # simülasyonun kaydı aynen duruyor
+        self.assertEqual(app.simulation.step_count, steps)
+        app._on_step_timer()                                         # yeni adımlar eklenmeye devam eder
+        app.step_timer.cancel()
+        self.assertEqual(app.log_entries()[-1][0], "step")
+        self.assertEqual(app.log_entries()[-1][1][0], str(steps + 1))
+
+    def test_clear_button_is_wired(self):
+        app = self.run_steps(3)
+        app.clear_log_button.invoke()
+        self.assertEqual(len(app.log_entries()), 1)
+        self.assertTrue(str(app.clear_log_button["text"]).endswith("Ekranı Temizle"))
+
+    def test_real_cap_of_ten_thousand_rows(self):
+        from gui import MAX_LOG_LINES
+        app = self.app
+        app.start()
+        app.step_timer.cancel()
+        app.dirt_timer.cancel()
+        for i in range(MAX_LOG_LINES + 20):
+            app._append_log(f"satır {i}")
+        entries = app.log_entries()
+        self.assertEqual(len(entries), MAX_LOG_LINES + 1)            # kayıtlar + kaldırma bilgisi
+        self.assertIn("21 satır", entries[0][1][5])                  # başlangıç satırı + 20
+        self.assertEqual(entries[-1][1][5], f"satır {MAX_LOG_LINES + 19}")
+
+
 class ControlTests(LayoutTestCase):
     def test_buttons_keep_their_words(self):
         app = self.app
