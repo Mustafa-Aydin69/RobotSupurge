@@ -44,6 +44,14 @@ COLORS = {
     "row_info_bg": "#eef5fd",
     "ok": "#22a447",              # "Çalışıyor" göstergesi
     "warning": "#d48806",
+    # Açılış ekranı
+    "welcome_bg": "#fefefe",      # referans görselin zemini
+    "welcome_blob": "#eaf2fd",    # köşelerdeki açık mavi lekeler
+    "welcome_blob_dark": "#dfeafb",
+    "hero_title": "#0f2747",
+    "hero_text": "#3d5170",
+    "separator": "#e3e9f2",
+    "hero_border": "#c3cfdd",
 }
 
 # Tuval (ortam ve iç model) renkleri
@@ -79,6 +87,11 @@ FONT_SIZES = {
     "stat_value": 12,
     "log": 10,
     "badge": 9,
+    "hero_title": 40,
+    "hero_subtitle": 15,
+    "hero_button": 15,
+    "feature": 11,
+    "guide_title": 18,
 }
 
 SPACING = {
@@ -126,6 +139,10 @@ BUTTON_SYMBOLS = {
     "stop": "\u25a0",       # ■
     "compare": "\u21c4",    # ⇄
     "clear": "\u2715",      # ✕
+    "home": "\u2302",       # ⌂
+    "guide": "\u2139",      # ℹ
+    "next": "\u203a",       # ›
+    "back": "\u2039",       # ‹
 }
 
 # Bu ortam değişkeni tanımlıysa simgeler hiç kullanılmaz (yalnızca metin).
@@ -253,9 +270,16 @@ def icon_font_family(root):
 def setup(root, scale=1.0):
     """Temayı ``root`` penceresine uygular ve ``ttk.Style`` nesnesini döndürür.
 
-    Her ``Tk`` kökü için bir kez çağrılır (testler birden çok kök oluşturur).
+    Her ``Tk`` kökü için bir kez uygulanır; aynı köke yeniden çağrılırsa
+    (ör. ana menüden simülasyona yeniden geçişte) önceki stil döndürülür.
+    Temanın yeniden uygulanması ttkbootstrap'ın kapanmış ekranlardaki
+    bileşenlere mesaj göndermesine yol açardı.
     """
     from tkinter import ttk
+
+    existing = getattr(root, "_robot_theme_style", None)
+    if existing is not None:
+        return existing
 
     if bootstrap_available():
         from ttkbootstrap.publisher import Publisher
@@ -279,6 +303,7 @@ def setup(root, scale=1.0):
     # ttkbootstrap tema uygulanırken pencere zeminini tema rengine çeker;
     # sayfa zemini bu yüzden en son verilir.
     root.configure(background=COLORS["page"])
+    root._robot_theme_style = style
     return style
 
 
@@ -311,11 +336,12 @@ def _configure_plain_ttk(style):
     style.configure("TProgressbar", background=c["primary"], troughcolor=c["neutral"])
 
 
-def _button_style(style, name, bg, fg, active_bg, border=None, font_spec=None, padding=(14, 7)):
+def _button_style(style, name, bg, fg, active_bg, border=None, font_spec=None, padding=(14, 7), focus=None):
     c = COLORS
     border = border or bg
     style.configure(name, background=bg, foreground=fg, bordercolor=border, lightcolor=bg, darkcolor=bg,
-                    focuscolor=fg, padding=padding, font=font_spec or font("body", "bold"), relief="flat")
+                    focuscolor=focus or fg, padding=padding, font=font_spec or font("body", "bold"), relief="flat",
+                    borderwidth=1)
     style.map(name,
               background=[("disabled", c["disabled_bg"]), ("pressed", active_bg), ("active", active_bg)],
               lightcolor=[("disabled", c["disabled_bg"]), ("active", active_bg)],
@@ -347,6 +373,17 @@ def _configure_custom_styles(style, scale):
     _button_style(style, "Plain.TButton", card, c["text"], c["neutral"], border=c["border"])
     _button_style(style, "Small.TButton", card, c["text"], c["neutral"], border=c["border"],
                   font_spec=font("caption"), padding=(10, 4))
+
+    # Açılış ve rehber ekranları
+    # Büyük düğmelerde noktalı odak çerçevesi gösterilmez (Enter her zaman Oyna'dır).
+    _button_style(style, "Hero.TButton", c["primary"], "#ffffff", c["primary_active"],
+                  font_spec=font("hero_button", "bold"), padding=(28, 14), focus=c["primary"])
+    _button_style(style, "HeroAlt.TButton", card, c["hero_title"], c["neutral"], border=c["hero_border"],
+                  font_spec=font("hero_button", "bold"), padding=(28, 13), focus=card)
+    style.configure("HeroAlt.TButton", relief="solid")      # ince çerçeve görünsün
+    style.configure("GuideTitle.TLabel", background=card, foreground=c["hero_title"],
+                    font=font("guide_title", "bold"))
+    style.configure("GuideBody.TLabel", background=card, foreground=c["hero_text"], font=font("subtitle"))
 
     style.configure("Log.Treeview", font=mono_font(), rowheight=max(20, round(22 * scale)),
                     background=card, fieldbackground=card, bordercolor=c["border"])

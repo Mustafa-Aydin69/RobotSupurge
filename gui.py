@@ -288,8 +288,11 @@ class VacuumApp:
     CANVAS_MIN_HEIGHT = 120   # tuvalin istediği yükseklik; pencere küçükse günlüğe yer kalır
     LOG_MIN_HEIGHT = 130      # günlüğün dar pencerede de görünür kalan en küçük yüksekliği
 
-    def __init__(self, root):
+    def __init__(self, root, on_home=None):
+        """``on_home`` verilirse başlıkta "Ana Menü" düğmesi gösterilir ve pencere
+        (başlık, boyut, kapatma) ``AppShell`` tarafından yönetilir."""
         self.root = root
+        self.on_home = on_home
         self.simulation = None
         self.step_timer = PausableTimer(root, self._on_step_timer)
         self.dirt_timer = PausableTimer(root, self._on_dirt_timer)
@@ -302,17 +305,13 @@ class VacuumApp:
         self._log_trimmed = 0           # ekrandan kaldırılan günlük satırı sayısı
         self._log_following = True      # günlük en son kaydı takip ediyor mu?
 
-        root.title(APP_TITLE)
         # Piksel cinsinden boyutlar ekran ölçeğiyle büyütülür; ekrana sığmayacaksa sınırlanır.
         self.scale = ui_scale(root)
         self.style = theme.setup(root, self.scale)
-        width = min(round(1440 * self.scale), int(root.winfo_screenwidth() * 0.94))
-        height = min(round(1040 * self.scale), int(root.winfo_screenheight() * 0.90))
-        root.geometry(f"{width}x{height}")
-        # En küçük boyut: altı bölümün hepsi görünür kalır (ekran daha küçükse ekrana göre).
-        root.minsize(min(round(MIN_WINDOW_WIDTH * self.scale), width),
-                     min(round(MIN_WINDOW_HEIGHT * self.scale), height))
-        root.protocol("WM_DELETE_WINDOW", self.on_close)
+        if on_home is None:                     # tek başına açılan pencere
+            root.title(APP_TITLE)
+            configure_window_size(root, self.scale)
+            root.protocol("WM_DELETE_WINDOW", self.on_close)
 
         self._build_header()
         self._build_settings()
@@ -350,6 +349,12 @@ class VacuumApp:
         self.subtitle = ttk.Label(frame, text=APP_SUBTITLE, style="Subtitle.TLabel")
         self.subtitle.grid(row=1, column=1, sticky="nw")
         self.header = frame
+        self.home_button = None
+        if self.on_home is not None:
+            frame.columnconfigure(8, weight=1)
+            self.home_button = ttk.Button(frame, text=theme.button_text("home", "Ana Menü"),
+                                          command=self.go_home, takefocus=False, **theme.button_options("small"))
+            self.home_button.grid(row=0, column=9, rowspan=2, sticky="e")
 
     def _build_settings(self):
         """Ayarlar kartı: başlık ve not, ayar alanları, kontrol düğmeleri."""
@@ -544,6 +549,8 @@ class VacuumApp:
             self.subtitle.grid(row=0, column=2, sticky="sw", padx=(self._px(16), 0), pady=(0, self._px(5)))
             # Başlığın yanına sığmıyorsa alt başlık gizlenir (yarım görünmez).
             title_width = sum(w.winfo_reqwidth() for w in (self.logo, self.title_label, self.subtitle))
+            if self.home_button is not None:
+                title_width += self.home_button.winfo_reqwidth() + self._px(16)
             if self.header.winfo_width() < title_width + self._px(40):
                 self.subtitle.grid_remove()
         else:
@@ -958,6 +965,28 @@ class VacuumApp:
         self._cancel_timers()
         self.root.destroy()
 
+    def go_home(self):
+        """ "Ana Menü": simülasyon ekranı kapatılır ve açılış ekranına dönülür."""
+        if self.on_home is not None:
+            self.on_home()
+
+    def shutdown(self):
+        """Ekranı kapatır; ana pencere açık kalır.
+
+        Çalışan simülasyon durdurulur, bekleyen zamanlayıcılar iptal edilir,
+        karşılaştırma penceresi kapatılır, pencereye eklenen kısayollar
+        kaldırılır ve ekranın bileşenleri yok edilir.
+        """
+        self._cancel_timers()
+        if self._is_active():
+            self.simulation.stop()
+        if self.compare_window is not None and not self.compare_window.closed:
+            self.compare_window.close()
+        for sequence in ("<space>", "<Escape>", "<Configure>"):
+            self.root.unbind(sequence)
+        for widget in (self.header, self.settings_card, self.board, self.status_card, self.log_card):
+            widget.destroy()
+
     def _on_space_key(self, event):
         # Yazı alanlarında boşluk tuşu normal davranışını korur.
         if isinstance(event.widget, (tk.Entry, tk.Spinbox, ttk.Entry, ttk.Spinbox)):
@@ -1236,8 +1265,74 @@ class VacuumApp:
         draw_environment(self.canvas, grid, env, plan, (self.CANVAS_WIDTH, self.CANVAS_HEIGHT))
 
 
+def configure_window_size(root, scale):
+    """Başlangıç boyutu kullanılabilir ekrana göre; en küçük boyut altı bölümü gösterir."""
+    width = min(round(1440 * scale), int(root.winfo_screenwidth() * 0.94))
+    height = min(round(1040 * scale), int(root.winfo_screenheight() * 0.90))
+    root.geometry(f"{width}x{height}")
+    root.minsize(min(round(MIN_WINDOW_WIDTH * scale), width), min(round(MIN_WINDOW_HEIGHT * scale), height))
+
+
+class AppShell:
+    """Tek ana pencerede ekranlar arası geçiş: açılış, rehber ve simülasyon.
+
+    Her geçişte önceki ekran tamamen kapatılır (zamanlayıcılar, kısayollar,
+    bileşenler); yeni bir Tk kök penceresi oluşturulmaz.
+    """
+
+    def __init__(self, root):
+        self.root = root
+        self.scale = ui_scale(root)
+        self.style = theme.setup(root, self.scale)
+        self.screen = None          # WelcomeScreen ya da GuideScreen
+        self.app = None             # VacuumApp (simülasyon ekranı)
+        root.title(APP_TITLE)
+        configure_window_size(root, self.scale)
+        root.protocol("WM_DELETE_WINDOW", self.close)
+        self.show_welcome()
+
+    @property
+    def current(self):
+        """Gösterilen ekran: "welcome", "guide" ya da "simulation"."""
+        from welcome import GuideScreen
+        if self.app is not None:
+            return "simulation"
+        return "guide" if isinstance(self.screen, GuideScreen) else "welcome"
+
+    def show_welcome(self):
+        from welcome import WelcomeScreen
+        self._clear()
+        self.screen = WelcomeScreen(self.root, self.scale, on_play=self.show_simulation,
+                                    on_guide=self.show_guide)
+
+    def show_guide(self):
+        from welcome import GuideScreen
+        self._clear()
+        self.screen = GuideScreen(self.root, self.scale, on_home=self.show_welcome, on_play=self.show_simulation)
+
+    def show_simulation(self):
+        self._clear()
+        self.app = VacuumApp(self.root, on_home=self.show_welcome)
+
+    def _clear(self):
+        if self.app is not None:
+            self.app.shutdown()
+            self.app = None
+        if self.screen is not None:
+            self.screen.destroy()
+            self.screen = None
+        # Önceki ekranın satır/sütun ağırlıkları sıfırlanır.
+        for index in range(5):
+            self.root.rowconfigure(index, weight=0, minsize=0)
+        self.root.columnconfigure(0, weight=0)
+
+    def close(self):
+        self._clear()
+        self.root.destroy()
+
+
 def run():
     enable_windows_dpi_awareness()
     root = tk.Tk()
-    VacuumApp(root)
+    AppShell(root)
     root.mainloop()
