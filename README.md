@@ -14,19 +14,33 @@ incelemek. Robot süpürge, odaları kendiliğinden yeniden kirlenen bir ortamda
 | **Model Tabanlı Ajan** | Algılarından kurduğu iç model (her odanın son bilinen durumu ve yaşı). |
 | **Amaç Tabanlı Ajan** | Aynı iç model + açık bir hedef oda ve oraya BFS ile çıkarılan rota. |
 
-Program Python ve Tkinter ile yazılmıştır, ek paket gerektirmez. Ödevin
+Program Python ve Tkinter ile yazılmıştır; arayüz teması için ttkbootstrap
+kullanılır (kurulu değilse standart ttk temasıyla aynı işlevlerle çalışır). Ödevin
 zorunlu kısmı (iki oda, basit refleks ajan, otomatik kirlenme, günlük,
 durdurma) ve bütün isteğe bağlı geliştirmeler (çok odalı grid, model tabanlı
 ajan, amaç tabanlı ajan) tamamlanmıştır.
 
 ## Python kaynak kodundan çalıştırma
 
-**Gereksinimler:** Python 3.9 veya üzeri. Tkinter, Python'un Windows
-kurulumuyla birlikte gelir; başka paket gerekmez. Python 3.9, 3.12 ve 3.13 ile
-test edilmiştir.
+**Gereksinimler:** Python 3.9 veya üzeri ve Tkinter (Python'un Windows
+kurulumuyla birlikte gelir). Arayüz teması için ttkbootstrap 1.14.7
+(`requirements.txt`; bağımlılığı Pillow). Python 3.9, 3.12 ve 3.13 ile test
+edilmiştir.
 
 ```bash
+pip install -r requirements.txt
 python main.py
+```
+
+`requirements.txt` yoksa `pip install ttkbootstrap==1.14.7` yeterlidir.
+ttkbootstrap kurulu değilse program aynı renklerle standart ttk ("clam")
+temasında çalışır; bütün işlevler aynıdır, yalnızca görünüm sadeleşir.
+Global Python kurulumunu değiştirmemek için sanal ortam önerilir:
+
+```bash
+python -m venv .venv
+.venv\Scripts\python -m pip install -r requirements.txt
+.venv\Scripts\python main.py
 ```
 
 Pencere açmadan doğrulama (çıkış kodu 0 = başarılı):
@@ -47,9 +61,11 @@ EXE'yi kaynak koddan üretmek için (proje klasöründe):
 build_exe.bat
 ```
 
-- Betik PyInstaller 6.22.3'ü projeye özel `.venv-build` sanal ortamına kurar
-  (global Python'a dokunmaz), kaynak kodu `--self-test` ile doğrular ve
-  `dist\RobotSupurge.exe` dosyasını üretir (`--onefile --windowed`).
+- Betik PyInstaller 6.22.3'ü ve `requirements.txt`'teki ttkbootstrap'ı
+  projeye özel `.venv-build` sanal ortamına kurar (global Python'a dokunmaz),
+  kaynak kodu `--self-test` ile doğrular ve `dist\RobotSupurge.exe` dosyasını
+  üretir (`--onefile --windowed`). ttkbootstrap EXE'nin içine paketlenir;
+  EXE'nin `--self-test` raporu kullanılan temayı ve sürümünü yazar.
 - `build_exe.bat onedir` tek klasörlük sürüm üretir
   (`dist\RobotSupurge\RobotSupurge.exe`); daha hızlı açılır ama yaklaşık
   1.000 dosyadan oluşur.
@@ -160,12 +176,18 @@ ilerler ve yoldaki kirli oda rotayı değiştirmeden temizlenir.
 
 ## Arayüz rehberi
 
+Pencere yukarıdan aşağıya altı bölümden oluşur: başlık, **Ayarlar** kartı
+(ayar alanları ve kontrol düğmeleri), **Gerçek ortam** ve **Ajanın iç modeli**
+kartları, **Simülasyon durumu** kartları ve **Algı ve eylem günlüğü** tablosu.
+Renkler, yazı tipleri ve boşluklar `theme.py`'de tanımlıdır.
+
 | Kontrol | İşlev |
 |---|---|
 | **Başlat** | Yeni bir simülasyon başlatır; önceki durum ve günlük sıfırlanır. |
 | **Duraklat / Devam** (Boşluk) | Durumu koruyarak askıya alır ya da kaldığı yerden sürdürür. Adım ve kirlenme zamanlayıcıları kalan sürelerini korur; süre göstergesi de durur. |
 | **Durdur** (Esc) | Simülasyonu sonlandırır; günlük ve son durum ekranda kalır, süre sabitlenir. |
 | **Ajanları Karşılaştır** | Karşılaştırma penceresini açar (aşağıya bakın). Ana simülasyonu etkilemez. |
+| **Ekranı Temizle** | Günlük tablosundaki satırları ekrandan siler; simülasyonun kendi kayıtlarına dokunmaz. |
 | Adım aralığı (ms) | Ajanın iki adımı arasındaki süre (100–5000, varsayılan 700). Çalışırken değiştirilebilir. |
 | Kirlenme aralığı (sn) | Kirlenme tetiklemeleri arasındaki süre (0,5–60, varsayılan 3). Çalışırken değiştirilebilir. |
 | Seed | İsteğe bağlı. Aynı seed aynı başlangıcı, kirlenmeleri ve ajan seçimlerini üretir. |
@@ -173,8 +195,16 @@ ilerler ve yoldaki kirli oda rotayı değiştirmeden temizlenir.
 | Ajan türü | Yalnızca Başlat'ta uygulanır. |
 
 Satır, sütun ve ajan türü simülasyon çalışırken ya da duraklatılmışken
-değiştirilemez. Pencere yeniden boyutlandırılabilir; grid kullanılabilir alana
-göre ölçeklenir. Windows'ta yüksek DPI (ör. %150 ölçekleme) desteklenir.
+değiştirilemez. Düğme metinlerinin önündeki simgeler yalnızca görseldir; her
+düğmenin anlamı metnindedir (`ROBOT_UI_TEXT_ONLY=1` ile simgeler kapatılır).
+
+Pencerenin başlangıç boyutu kullanılabilir ekrana göre belirlenir (en çok
+1440×1040) ve pencere yeniden boyutlandırılabilir; grid kullanılabilir alana
+göre ölçeklenir. Dar pencerede ayar alanları ve durum kartları alt satıra
+geçer, paneller alt alta dizilir. Alçak pencerede alt başlık başlığın yanına
+geçer, ayar etiketleri kısalır ("Adım (ms)" gibi) ve kart başlıkları ile
+gerekirse açıklama satırları gizlenir. Windows'ta yüksek DPI (ör. %150
+ölçekleme) desteklenir.
 
 **Gerçek ortam paneli:**
 
@@ -199,24 +229,29 @@ kopyalarından çizilir, ajana bilgi vermez ve belleğini değiştiremez.
 | ● Mavi nokta | Ajanın bildiği kendi konumu |
 | □ Mor çerçeve ve ok | Amaç tabanlı ajanın hedefi ve kalan rotası |
 
-**Durum satırı:** durum, ajan türü, ortam boyutu, kirli oda sayısı, bilinen
-oda sayısı (model/amaç), hedef ve kalan rota (amaç), adım, temizleme ve
-hareket sayıları, saniye saniye akan süre ve son eylem.
+**Simülasyon durumu kartları:** durum (renkli: çalışıyor yeşil, duraklatıldı
+turuncu, durduruldu kırmızı), seçili ajan türü, ortam boyutu, kirli oda
+sayısı, bilinen oda sayısı (model/amaç), hedef ve kalan rota (amaç), adım,
+temizleme ve hareket sayıları ve saniye saniye akan süre. Son eylem günlük
+tablosunda görülür.
 
 ### Günlük
 
-Algı dizisi ve eylemler çalışma boyunca sırayla gösterilir:
+Algı dizisi ve eylemler çalışma boyunca sırayla bir tabloda gösterilir:
 
-```
-Adım   12 | Süre: 00:08.4 | Oda: A | Algı: Kirli | Eylem: Temizle
-Kirlenme  | Süre: 00:09.0 | B odası kirlendi
-Hedef     | A1 (keşif, 2 adım, puan 6.00) — hedefe ulaşıldı
-```
+| Adım | Süre | Oda | Algı | Eylem | Açıklama |
+|---|---|---|---|---|---|
+| 12 | 00:08.4 | A | Kirli | Temizle | – |
+| – | 00:09.0 | B | – | – | Kirlenme: B odası kirlendi |
+| – | 00:09.1 | A1 | – | – | Hedef: A1 (keşif, 2 adım, puan 6.00) — hedefe ulaşıldı |
 
-- **Adım** satırları algı-eylem kayıtlarıdır. **Kirlenme** (turuncu) ve
-  **Hedef** (mor) satırları bilgi kayıtlarıdır; adım sayısını artırmazlar.
+- Adım satırları algı-eylem kayıtlarıdır. **Kirlenme** (turuncu zemin),
+  **hedef değişimi** (mor zemin) ve **bilgi** (mavi zemin) satırları adım
+  sayısını artırmaz.
 - Ekranda en fazla 10.000 kayıt tutulur; eski satırlar kaldırıldığında en
   üstte bilgi verilir. Simülasyonun kendi günlüğü eksiksiz korunur.
+- **Ekranı Temizle** yalnızca ekrandaki satırları siler. **Başlat** yeni
+  simülasyonla günlüğü sıfırlar; **Durdur** günlüğü ekranda bırakır.
 - Kullanıcı geçmiş kayıtlara bakarken otomatik kaydırma görünümü bozmaz.
 - Günlük yalnızca izleme amaçlıdır; ajanların kararlarında kullanılmaz.
 
@@ -277,7 +312,9 @@ python -m unittest discover -s tests -v
 ```
 
 - Ortam, grid, üç ajan, BFS, simülasyon, zamanlayıcılar, arayüz,
-  karşılaştırma ve `--self-test` için 300'ü aşkın test vardır.
+  karşılaştırma, tema, arayüz yerleşimi ve `--self-test` için 340'ı aşkın
+  test vardır. Testler ttkbootstrap kurulu ortamda da kurulu olmayan ortamda
+  da çalıştırılabilir.
 - Faz 1'in 1×2 davranışı seed'li bir regresyon referansıyla
   (`tests/data/phase1_reference.json`), karşılaştırma ölçümleri Faz 4 aracının
   kayıtlı çıktılarıyla (`tests/data/comparison_reference.json`) karşılaştırılır.
@@ -298,14 +335,16 @@ environment.py      grid ve ortam: algılama, temizleme, hareket, kirlenme
 agents.py           basit refleks, model tabanlı ve amaç tabanlı (BFS) ajanlar
 simulation.py       algı-karar-eylem döngüsü, durum yönetimi ve günlük
 comparison.py       ajan karşılaştırma ölçümleri
-gui.py              Tkinter ana penceresi, kontroller, durum ve günlük
+gui.py              Tkinter ana penceresi, kontroller, durum kartları ve günlük
 views.py            tuval çizimleri (gerçek ortam, iç model, hedef ve rota)
+theme.py            arayüz teması: renkler, yazı tipleri, ttkbootstrap stilleri
 timers.py           duraklatılabilen zamanlayıcı
 compare_window.py   ajan karşılaştırma penceresi
 self_test.py        pencere açmadan doğrulama
 tests/              unittest testleri ve referans veriler
 tools/              komut satırı karşılaştırma aracı
 build_exe.bat       Windows EXE derleme betiği
+requirements.txt    arayüz teması bağımlılığı (ttkbootstrap)
 ```
 
 Bağımlılık yönü `gui → simulation → agents / environment` şeklindedir. Ortam,
@@ -338,8 +377,8 @@ doğrulanır (`tests/test_submission.py`).
 - [ ] 1×2, Basit Refleks Ajan: temiz odadan diğer odaya geçiliyor.
 - [ ] Kirli oda temizleniyor; temizleme ve hareket ayrı adımlarda.
 - [ ] Zamanlayıcıyla odalar yeniden kirleniyor (turuncu "Kirlenme" satırları).
-- [ ] Günlükte adım numarası, oda, algı ve eylem sırayla görünüyor.
+- [ ] Günlük tablosunda adım numarası, oda, algı ve eylem sırayla görünüyor.
 - [ ] Bütün odalar temizken de ajan dolaşmaya devam ediyor.
 - [ ] Duraklat/Devam (Boşluk) ve Durdur (Esc) çalışıyor; durdurunca süre sabit.
 - [ ] Çok odalı grid (ör. 3×4, 6×6) ve model/amaç tabanlı ajanlar çalışıyor.
-- [ ] `python main.py --self-test` ya da EXE ile `--self-test` 7/7 başarılı.
+- [ ] `python main.py --self-test` ya da EXE ile `--self-test` 8/8 başarılı (tema satırında "ttkbootstrap 1.14.7").

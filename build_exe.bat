@@ -21,8 +21,8 @@ if not exist "%VENV%\Scripts\python.exe" (
     python -m venv "%VENV%" || goto :error
 )
 
-echo [2/4] PyInstaller %PYI_VERSION% kuruluyor
-"%VENV%\Scripts\python.exe" -m pip install --disable-pip-version-check --quiet "pyinstaller==%PYI_VERSION%" || goto :error
+echo [2/4] PyInstaller %PYI_VERSION% ve requirements.txt (ttkbootstrap) kuruluyor
+"%VENV%\Scripts\python.exe" -m pip install --disable-pip-version-check --quiet "pyinstaller==%PYI_VERSION%" -r requirements.txt || goto :error
 
 echo [3/4] Kaynak kod dogrulamasi (--self-test)
 "%VENV%\Scripts\python.exe" main.py --self-test || goto :error
@@ -31,7 +31,7 @@ set "MODE=--onefile"
 if /I "%~1"=="onedir" set "MODE=--onedir"
 
 echo [4/4] EXE derleniyor (%MODE% --windowed)
-"%VENV%\Scripts\python.exe" -m PyInstaller --noconfirm --clean %MODE% --windowed --name RobotSupurge main.py || goto :error
+"%VENV%\Scripts\python.exe" -m PyInstaller --noconfirm --clean %MODE% --windowed --copy-metadata ttkbootstrap --name RobotSupurge main.py || goto :error
 
 echo.
 set "EXE=dist\RobotSupurge.exe"
