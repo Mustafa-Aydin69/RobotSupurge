@@ -5,6 +5,7 @@ import tkinter as tk
 import unittest
 from unittest import mock
 
+import theme
 from comparison import AgentSummary, summarize_coverage
 from compare_window import format_clean_ratio, format_coverage, format_moves_per_clean, parse_settings
 from gui import VacuumApp
@@ -92,6 +93,23 @@ class CompareWindowTests(unittest.TestCase):
         self.assertEqual(len(window.chart.find_withtag("bar")), 6)       # 2 grafik x 3 ajan
         self.assertIn("Tamamlandı", window.status_var.get())
         self.assertLess(window.job.longest_slice, 0.1, "Tek bir hesaplama dilimi arayüzü kilitlememeli")
+
+    def test_chart_texts_stay_inside_canvas_and_theme_is_applied(self):
+        window = self.open_small()
+        window.window.deiconify()
+        window.start()
+        self.run_until_done(window)
+        self.root.update()
+        chart = window.chart
+        height = chart.winfo_height()
+        names = [chart.itemcget(i, "text") for i in chart.find_all() if chart.type(i) == "text"]
+        self.assertIn("Amaç Tabanlı Ajan", names)
+        for item in chart.find_all():
+            if chart.type(item) == "text":
+                self.assertLessEqual(chart.bbox(item)[3], height + 2, chart.itemcget(item, "text"))
+        self.assertEqual(str(window.window.cget("background")), theme.COLORS["page"])
+        self.assertTrue(str(window.start_button["text"]).endswith("Başlat"))
+        self.assertTrue(str(window.cancel_button["text"]).endswith("İptal"))
 
     def test_cancel_shows_no_partial_results_and_restart_works(self):
         window = self.open_small(seed_count="10", steps="3000", rows="6", cols="6")
