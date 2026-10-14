@@ -76,7 +76,7 @@ FONT_SIZES = {
     "card_title": 12,
     "body": 10,
     "caption": 9,
-    "stat_value": 13,
+    "stat_value": 12,
     "log": 10,
     "badge": 9,
 }
@@ -95,35 +95,37 @@ SPACING = {
 # gösterilmez; her simgenin yanında anlamı taşıyan bir metin bulunur.
 ICON_FONT_FAMILIES = ("Segoe Fluent Icons", "Segoe MDL2 Assets")
 ICON_GLYPHS = {
-    "settings": "",
-    "environment": "",
-    "model": "",
-    "stats": "",
-    "log": "",
-    "info": "",
-    "keyboard": "",
-    "state": "",
-    "agent": "",
-    "grid": "",
-    "dirty": "",
-    "known": "",
-    "steps": "",
-    "cleans": "",
-    "moves": "",
-    "elapsed": "",
-    "target": "",
-    "compare": "",
+    "settings": "\ue713",
+    "environment": "\ue80f",
+    "model": "\ue9d9",
+    "stats": "\ue9d2",
+    "log": "\ue8a5",
+    "info": "\ue946",
+    "keyboard": "\ue765",
+    "state": "\ue768",
+    "state_paused": "\ue769",
+    "state_stopped": "\ue71a",
+    "agent": "\ue99a",
+    "grid": "\ue80a",
+    "dirty": "\ue7c1",
+    "known": "\ue890",
+    "steps": "\ue8ef",
+    "cleans": "\ue74e",
+    "moves": "\ue72a",
+    "elapsed": "\ue916",
+    "target": "\ue81d",
+    "compare": "\ue8ab",
 }
 
 # Düğme metinlerinin önündeki simgeler (Segoe UI Symbol'de bulunan Unicode
 # karakterler). Düğmenin anlamı her zaman metindedir.
 BUTTON_SYMBOLS = {
-    "start": "▶",      # ▶
-    "pause": "❚❚",  # ❚❚
-    "resume": "▶",
-    "stop": "■",       # ■
-    "compare": "⇄",    # ⇄
-    "clear": "✕",      # ✕
+    "start": "\u25b6",      # ▶
+    "pause": "\u275a\u275a",  # ❚❚
+    "resume": "\u25b6",     # ▶
+    "stop": "\u25a0",       # ■
+    "compare": "\u21c4",    # ⇄
+    "clear": "\u2715",      # ✕
 }
 
 # Bu ortam değişkeni tanımlıysa simgeler hiç kullanılmaz (yalnızca metin).

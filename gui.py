@@ -36,6 +36,8 @@ MIN_STEP_MS, MAX_STEP_MS = 100, 5000
 DEFAULT_DIRT_SECONDS = 3.0
 CLOCK_REFRESH_MS = 200          # süre göstergesinin yenilenme aralığı
 SIDE_BY_SIDE_MIN_WIDTH = 760    # iki panelin yan yana dizildiği en küçük tahta genişliği
+PANEL_MIN_HEIGHT = 230          # alt alta dizilen bir panelin en küçük yüksekliği
+LEGEND_MIN_PANEL_HEIGHT = 280   # açıklama satırının gösterildiği en küçük kart yüksekliği
 MAX_LOG_LINES = 10000           # ekrandaki günlüğün en fazla satır sayısı
 LOG_TRIM_NOTICE = ("… Eski kayıtlar ekrandan kaldırıldı ({count} satır). "
                    "Simülasyonun kendi günlüğü eksiksiz korunuyor.")
@@ -66,8 +68,35 @@ APP_SUBTITLE = "Yapay zekâ ajanlarının ortamı algılama ve temizlik davranı
 SETTINGS_NOTE = ("Aralıklar çalışırken de değiştirilebilir. Satır/sütun (1–6, en az 2 oda) "
                  "ve ajan türü yalnızca Başlat'ta uygulanır.")
 SEED_PLACEHOLDER = "örn. 42"
+FIELD_SHORT_LABELS = {          # alçak ve dar pencerede kullanılan kısa etiketler
+    "Adım aralığı (ms)": "Adım (ms)",
+    "Kirlenme aralığı (sn)": "Kirlenme (sn)",
+    "Seed (isteğe bağlı)": "Seed",
+}
 SHORTCUTS_TEXT = "Kısayollar: Boşluk = Duraklat/Devam, Esc = Durdur"
 COMPACT_HEIGHT = 900            # bu yükseklikten alçak pencerede sıkı yerleşim
+
+# İstatistik kartları: (anahtar, simge, başlık). "known" yalnızca iç modeli
+# olan, "target" yalnızca hedefi olan ajanlarda gösterilir.
+STAT_FIELDS = (
+    ("state", "state", "Durum"),
+    ("agent", "agent", "Seçili ajan türü"),
+    ("size", "grid", "Ortam boyutu"),
+    ("dirty", "dirty", "Kirli oda sayısı"),
+    ("known", "known", "Bilinen oda sayısı"),
+    ("target", "target", "Hedef"),
+    ("steps", "steps", "Adım"),
+    ("cleans", "cleans", "Temizleme"),
+    ("moves", "moves", "Hareket"),
+    ("elapsed", "elapsed", "Süre"),
+)
+STAT_MIN_WIDTH = 120            # bir istatistik kartının en küçük genişliği
+STATE_STYLE = {                 # durum: (simge, renk anahtarı)
+    SimulationState.READY: ("state", "muted"),
+    SimulationState.RUNNING: ("state", "ok"),
+    SimulationState.PAUSED: ("state_paused", "warning"),
+    SimulationState.STOPPED: ("state_stopped", "danger"),
+}
 
 TWO_ROOM_MODEL_NOTE = (
     "Not: 1×2 ortamda her odadan yalnızca bir geçerli hareket olduğu için bu ajanın "
@@ -279,7 +308,8 @@ class VacuumApp:
                               **theme.tk_options())
         draw_logo(self.logo, size, page)
         self.logo.grid(row=0, column=0, rowspan=2, padx=(0, self._px(14)))
-        ttk.Label(frame, text=APP_TITLE, style="Title.TLabel").grid(row=0, column=1, sticky="sw")
+        self.title_label = ttk.Label(frame, text=APP_TITLE, style="Title.TLabel")
+        self.title_label.grid(row=0, column=1, sticky="sw")
         self.subtitle = ttk.Label(frame, text=APP_SUBTITLE, style="Subtitle.TLabel")
         self.subtitle.grid(row=1, column=1, sticky="nw")
         self.header = frame
@@ -362,18 +392,30 @@ class VacuumApp:
     def _field(self, label, weight=1):
         frame = ttk.Frame(self.fields_frame, style="Card.TFrame")
         frame.columnconfigure(0, weight=1)
-        ttk.Label(frame, text=label, style="Field.TLabel").grid(row=0, column=0, sticky="w",
-                                                                pady=(0, self._px(4)))
+        frame.label = ttk.Label(frame, text=label, style="Field.TLabel")
+        frame.label.grid(row=0, column=0, sticky="w", pady=(0, self._px(4)))
+        frame.texts = (label, FIELD_SHORT_LABELS.get(label, label))
         self._fields.append((frame, weight))
         return frame
 
-    def _layout_fields(self, width):
-        """Ayar alanlarını genişliğe göre 6, 3 ya da 2 sütuna yerleştirir."""
-        min_width = self._px(150)
-        columns = 6 if width >= 6 * min_width else 3 if width >= 3 * min_width else 2
-        if columns == self._fields_columns:
+    def _layout_fields(self, width=None):
+        """Ayar alanlarını genişliğe göre 6, 3 ya da 2 sütuna yerleştirir.
+
+        Alçak pencerede etiketler kısalır ("Adım (ms)" gibi); böylece dar
+        pencerede de altı alan tek satıra sığar ve tahtaya yer kalır.
+        """
+        width = self.fields_frame.winfo_width() if width is None else width
+        if width >= 6 * self._px(150):
+            columns, short = 6, False
+        elif self._is_compact() and width >= 6 * self._px(100):
+            columns, short = 6, True
+        else:
+            columns, short = (3 if width >= 3 * self._px(150) else 2), False
+        if (columns, short) == self._fields_columns:
             return
-        self._fields_columns = columns
+        self._fields_columns = (columns, short)
+        for frame, _ in self._fields:
+            frame.label.configure(text=frame.texts[1 if short else 0])
         gap = self._px(theme.SPACING["field"])
         for index in range(6):
             self.fields_frame.columnconfigure(index, weight=0, uniform="")
@@ -441,6 +483,10 @@ class VacuumApp:
         self.root.bind("<Configure>", lambda e: self._update_density() if e.widget is self.root else None,
                        add="+")
 
+    def _is_compact(self):
+        """Pencere alçak mı? (Sıkı yerleşim: alt başlık yanda, kısa etiketler, başlıksız istatistik.)"""
+        return self.root.winfo_height() < self._px(COMPACT_HEIGHT)
+
     def _update_density(self):
         """Pencere boyutuna göre sıkı ya da ferah yerleşim.
 
@@ -448,20 +494,23 @@ class VacuumApp:
         * Kısayol rozeti düğmelerin yanına sığmazsa ferah yerleşimde alta iner;
           alçak pencerede rozet gizlenir ve kısayollar ayarlar notuna eklenir.
         """
-        compact = self.root.winfo_height() < self._px(COMPACT_HEIGHT)
+        compact = self._is_compact()
         needed = (self._buttons_frame.winfo_reqwidth() + self.shortcut_badge.winfo_reqwidth()
                   + self._px(24))
         fits = self._controls_frame.winfo_width() >= needed
-        density = (compact, fits)
+        density = (compact, fits, self.header.winfo_width())
         if density == self._density:
             return
         self._density = density
         # Alçak pencerede alt başlık başlığın yanına geçer, simge küçülür.
         if compact:
-            self.subtitle.grid_configure(row=0, column=2, sticky="sw", padx=(self._px(16), 0),
-                                         pady=(0, self._px(5)))
+            self.subtitle.grid(row=0, column=2, sticky="sw", padx=(self._px(16), 0), pady=(0, self._px(5)))
+            # Başlığın yanına sığmıyorsa alt başlık gizlenir (yarım görünmez).
+            title_width = sum(w.winfo_reqwidth() for w in (self.logo, self.title_label, self.subtitle))
+            if self.header.winfo_width() < title_width + self._px(40):
+                self.subtitle.grid_remove()
         else:
-            self.subtitle.grid_configure(row=1, column=1, sticky="nw", padx=0, pady=0)
+            self.subtitle.grid(row=1, column=1, sticky="nw", padx=0, pady=0)
         logo = self._px(40 if compact else 52)
         self.logo.configure(width=logo, height=logo)
         draw_logo(self.logo, logo, theme.COLORS["page"])
@@ -478,6 +527,13 @@ class VacuumApp:
         else:
             self.shortcut_badge.grid_remove()
             note = f"{SETTINGS_NOTE} {SHORTCUTS_TEXT}."
+        if hasattr(self, "status_title"):
+            if compact:
+                self.status_title.pack_forget()
+            else:
+                self.status_title.pack(side="top", anchor="w", before=self.stats_frame)
+            self._layout_stats()
+        self._layout_fields()
         self.settings_note.configure(text=note)
 
     def _px(self, value):
@@ -522,6 +578,17 @@ class VacuumApp:
         self.canvas.bind("<Configure>", lambda _event: self._draw())
         self.model_canvas.bind("<Configure>", lambda _event: self._draw())
 
+    def _show_legends(self, visible):
+        if not visible:
+            self.env_legend.pack_forget()
+            self.model_legend.pack_forget()
+            return
+        if not self.env_legend.winfo_manager():
+            self.env_legend.pack(side="bottom", fill="x", before=self.canvas)
+        if not self.model_legend.winfo_manager():
+            before = self.model_note if self.model_note.winfo_manager() else self.model_canvas
+            self.model_legend.pack(side="bottom", fill="x", before=before)
+
     def _panel_header(self, parent, icon, title, note=None):
         """Kart başlığı ve sağda oda sayısı: ``(çerçeve, sayı etiketi)``."""
         frame = ttk.Frame(parent, style="Card.TFrame")
@@ -529,21 +596,37 @@ class VacuumApp:
         frame.title.pack(side="left")
         count = ttk.Label(frame, style="CardNote.TLabel")
         count.pack(side="right")
+
+        def fit(_event=None):
+            # Oda sayısı sığmıyorsa yarım görünmek yerine gizlenir.
+            fits = frame.winfo_width() >= frame.title.winfo_reqwidth() + count.winfo_reqwidth() + self._px(12)
+            if fits and not count.winfo_manager():
+                count.pack(side="right")
+            elif not fits and count.winfo_manager():
+                count.pack_forget()
+
+        frame.bind("<Configure>", fit)
         return frame, count
 
     def _layout_board(self):
         """Panelleri yerleştirir.
 
         Model paneli gizliyse gerçek ortam bütün alanı kullanır. Görünürse
-        tahta yeterince genişse yan yana, değilse alt alta dizilir.
+        tahta yeterince genişse ya da alt alta dizilemeyecek kadar alçaksa
+        yan yana, değilse alt alta dizilir. Kartlar çok alçaksa açıklama
+        satırları gizlenir; öncelik oda çizimlerindedir.
         """
-        width = self.board.winfo_width()
+        width, height = self.board.winfo_width(), self.board.winfo_height()
         model_visible = self.model_frame.winfo_manager() == "grid"
-        side_by_side = width >= round(SIDE_BY_SIDE_MIN_WIDTH * self.scale)
-        layout = (model_visible, side_by_side)
+        side_by_side = (width >= self._px(SIDE_BY_SIDE_MIN_WIDTH)
+                        or height < 2 * self._px(PANEL_MIN_HEIGHT))
+        card_height = height if side_by_side or not model_visible else height / 2
+        legends = card_height >= self._px(LEGEND_MIN_PANEL_HEIGHT)
+        layout = (model_visible, side_by_side, legends)
         if layout == self._board_layout:
             return
         self._board_layout = layout
+        self._show_legends(legends)
         for index in range(2):
             self.board.columnconfigure(index, weight=0, minsize=0, uniform="")
             self.board.rowconfigure(index, weight=0)
@@ -567,11 +650,107 @@ class VacuumApp:
             self.model_frame.grid_configure(row=1, column=0, padx=0, pady=(self._px(8), 0))
 
     def _build_status(self):
-        self.status_var = tk.StringVar()
-        label = ttk.Label(self.root, textvariable=self.status_var, padding=(10, 2))
-        label.grid(row=3, column=0, sticky="ew")
-        # Dar pencerede durum satırı kesilmek yerine alt satıra geçer.
-        label.bind("<Configure>", lambda event: label.configure(wraplength=max(200, event.width - 20)))
+        """Simülasyon durumu: simgeli istatistik kartları (dar pencerede birden çok satır)."""
+        outer, body = theme.card(self.root, 12, self.scale)
+        outer.grid(row=3, column=0, sticky="ew", padx=self._px(theme.SPACING["page"]),
+                   pady=(0, self._px(theme.SPACING["gap"])))
+        self.status_card = outer
+        self.status_title = self._section_title(body, "stats", "Simülasyon durumu")
+        self.status_title.pack(side="top", anchor="w")
+        self.stats_frame = ttk.Frame(body, style="Card.TFrame")
+        self.stats_frame.pack(side="top", fill="x", pady=(self._px(8), 0))
+        card_bg = theme.COLORS["card"]
+        self.stat_vars, self.stat_cells, self._stat_values, self._stat_icons = {}, {}, {}, {}
+        for key, icon, caption in STAT_FIELDS:
+            cell = ttk.Frame(self.stats_frame, style="Card.TFrame")
+            cell.separator = tk.Frame(cell, width=1, background=theme.COLORS["border"], **theme.tk_options())
+            icon_label = theme.icon_label(cell, icon, card_bg, size=16)
+            if icon_label is not None:
+                icon_label.pack(side="left", padx=(self._px(12), self._px(8)))
+                self._stat_icons[key] = icon_label
+            texts = ttk.Frame(cell, style="Card.TFrame")
+            texts.pack(side="left", fill="x", padx=(0 if icon_label else self._px(12), self._px(6)))
+            cell.texts = texts
+            ttk.Label(texts, text=caption, style="StatCaption.TLabel").pack(anchor="w")
+            var = tk.StringVar(value="—")
+            value = ttk.Label(texts, textvariable=var, style="StatValue.TLabel")
+            value.pack(anchor="w")
+            cell.caption = caption
+            self.stat_vars[key], self.stat_cells[key], self._stat_values[key] = var, cell, value
+        self._stats_layout = None
+        self.stats_frame.bind("<Configure>", lambda _e: self._layout_stats())
+
+    def _visible_stats(self):
+        agent_type = self._displayed()[2]
+        hidden = set()
+        if not agent_has_model(agent_type):
+            hidden.add("known")
+        if not agent_has_plan(agent_type):
+            hidden.add("target")
+        return [key for key, _, _ in STAT_FIELDS if key not in hidden]
+
+    def _layout_stats(self):
+        """Görünen kartları sığdığı kadar sütuna dizer; ayırıcılar satır içindedir.
+
+        Sütun genişliği içeriğe göre belirlenir. Alçak pencerede kartlar tek
+        satıra sığmıyorsa simgeler gizlenir.
+        """
+        keys = self._visible_stats()
+        width = self.stats_frame.winfo_width()
+        if width <= 1:
+            return
+        show_icons = True
+        columns = self._stat_columns(keys, width, show_icons)
+        if columns < len(keys) and self._is_compact():
+            show_icons = False
+            columns = self._stat_columns(keys, width, show_icons)
+        layout = (tuple(keys), columns, show_icons)
+        if layout == self._stats_layout:
+            return
+        self._stats_layout = layout
+        for key, cell in self.stat_cells.items():
+            if key not in keys:
+                cell.grid_remove()
+            icon = self._stat_icons.get(key)
+            if icon is not None:
+                if show_icons:
+                    icon.pack(side="left", padx=(self._px(12), self._px(8)), before=cell.texts)
+                else:
+                    icon.pack_forget()
+            has_icon = show_icons and icon is not None
+            cell.texts.pack_configure(padx=(0 if has_icon else self._px(12), self._px(6)))
+        for index in range(len(STAT_FIELDS)):
+            self.stats_frame.columnconfigure(index, weight=0, uniform="")
+        for index, key in enumerate(keys):
+            row, column = divmod(index, columns)
+            cell = self.stat_cells[key]
+            cell.grid(row=row, column=column, sticky="ew", pady=(0 if row == 0 else self._px(8), 0))
+            slaves = cell.pack_slaves()
+            if column and cell.separator not in slaves:
+                cell.separator.pack(side="left", fill="y", before=slaves[0])
+            elif not column:
+                cell.separator.pack_forget()
+        for column in range(columns):
+            self.stats_frame.columnconfigure(column, weight=1)
+
+    def _stat_columns(self, keys, width, show_icons):
+        """Kartların sığdığı en çok sütun sayısı (her sütun en geniş kartı kadar)."""
+        widths = []
+        for key in keys:
+            content = self.stat_cells[key].texts.winfo_reqwidth() + self._px(20)
+            if show_icons and key in self._stat_icons:
+                content += self._px(40)
+            widths.append(max(content, self._px(STAT_MIN_WIDTH if show_icons else 80)))
+        for columns in range(len(keys), 1, -1):
+            needed = sum(max(widths[i] for i in range(column, len(keys), columns)) for column in range(columns))
+            if needed <= width:
+                return columns
+        return 1
+
+    def status_summary(self):
+        """Görünen istatistiklerin düz metni, ör. "Durum: Çalışıyor | Adım: 12 | …"."""
+        return " | ".join(f"{self.stat_cells[key].caption}: {self.stat_vars[key].get()}"
+                          for key in self._visible_stats())
 
     def _build_log(self):
         frame = ttk.LabelFrame(self.root, text="Algı ve eylem günlüğü", padding=4)
@@ -711,6 +890,7 @@ class VacuumApp:
     def _on_grid_setting_changed(self):
         if not self._is_active():
             self._draw()
+            self._update_status()
 
     def _is_active(self):
         return self.simulation is not None and self.simulation.state in (
@@ -886,28 +1066,37 @@ class VacuumApp:
         self.agent_combo.configure(state="disabled" if active else "readonly")
 
     def _update_status(self):
-        sim = self.simulation
-        if sim is None:
-            self.status_var.set("Durum: Hazır — başlamak için 'Başlat' düğmesine basın.")
-            return
-        last = ACTION_TEXT[self._last_action] if self._last_action else "—"
-        env = sim.environment
-        dirty = sum(1 for status in env.statuses().values() if status is Status.DIRTY)
-        known = ""
-        if agent_has_model(sim.agent_type):
-            known = f"Bilinen oda: {len(sim.agent.model_snapshot().observations)}/{len(env.rooms)}   |   "
-        if agent_has_plan(sim.agent_type):
-            plan = sim.agent.plan_snapshot()
-            if plan.target is not None:
-                remaining = f"kalan rota: {len(plan.route)} adım" if plan.route else "hedefe ulaşıldı"
-                known += f"Hedef: {plan.target.room} ({GOAL_KIND_TEXT[plan.target.kind]}), {remaining}   |   "
-        self.status_var.set(
-            f"Durum: {sim.state.value}   |   {AGENT_TYPE_TEXT[sim.agent_type]}   |   "
-            f"Ortam: {env.grid.rows}×{env.grid.cols}   |   "
-            f"Kirli oda: {dirty}/{len(env.rooms)}   |   {known}Adım: {sim.step_count}   |   "
-            f"Temizleme: {sim.clean_count}   |   Hareket: {sim.move_count}   |   "
-            f"Süre: {format_elapsed(sim.elapsed)}   |   Son eylem: {last}"
-        )
+        grid, env, agent_type = self._displayed()
+        sim = self.simulation if self._is_active() or env is not None else None
+        rooms = len(grid.rooms)
+        state = sim.state if sim is not None else SimulationState.READY
+        values = {
+            "state": state.value,
+            "agent": AGENT_TYPE_TEXT[agent_type],
+            "size": f"{grid.rows} × {grid.cols}",
+            "dirty": "—", "known": "—", "target": "—",
+            "steps": "0", "cleans": "0", "moves": "0", "elapsed": format_elapsed(0),
+        }
+        if sim is not None:
+            statuses = sim.environment.statuses().values()
+            values["dirty"] = f"{sum(1 for status in statuses if status is Status.DIRTY)} / {rooms}"
+            values.update(steps=str(sim.step_count), cleans=str(sim.clean_count), moves=str(sim.move_count),
+                          elapsed=format_elapsed(sim.elapsed))
+            if agent_has_model(sim.agent_type):
+                values["known"] = f"{len(sim.agent.model_snapshot().observations)} / {rooms}"
+            if agent_has_plan(sim.agent_type):
+                plan = sim.agent.plan_snapshot()
+                if plan.target is not None:
+                    remaining = f"{len(plan.route)} adım" if plan.route else "ulaşıldı"
+                    values["target"] = f"{plan.target.room} · {remaining}"
+        for key, value in values.items():
+            if self.stat_vars[key].get() != value:
+                self.stat_vars[key].set(value)
+        icon, color = STATE_STYLE[state]
+        self._stat_values["state"].configure(foreground=theme.COLORS[color])
+        if "state" in self._stat_icons:
+            self._stat_icons["state"].configure(text=theme.ICON_GLYPHS[icon], foreground=theme.COLORS[color])
+        self._layout_stats()
 
     def _displayed(self):
         """Çizilecek grid, ortam ve ajan türü: ``(grid, env, agent_type)``.
@@ -957,7 +1146,7 @@ class VacuumApp:
             self._layout_board()
         if show_model:
             if grid.is_two_room:
-                self.model_note.pack(side="bottom", fill="x", before=self.model_legend)
+                self.model_note.pack(side="bottom", fill="x", before=self.model_canvas)
             else:
                 self.model_note.pack_forget()
             self.model_count.configure(text=count)

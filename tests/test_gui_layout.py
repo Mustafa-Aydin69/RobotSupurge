@@ -30,6 +30,16 @@ class LayoutTestCase(unittest.TestCase):
         self.root.update()
         self.root.update()
 
+    def relayout(self, geometry, compact_height):
+        """Ekran yüksekliğinden bağımsız sınamak için sıkı yerleşim eşiği değiştirilir."""
+        with mock.patch("gui.COMPACT_HEIGHT", compact_height):
+            self.show(geometry)
+            self.app._density = None
+            self.app._fields_columns = None
+            self.app._stats_layout = None
+            self.app._update_density()
+            self.root.update()
+
 
 class HeaderAndSettingsTests(LayoutTestCase):
     def test_header_texts(self):
@@ -42,15 +52,24 @@ class HeaderAndSettingsTests(LayoutTestCase):
         self.assertNotIn("öğren", APP_SUBTITLE)
         self.assertEqual(self.root.title(), APP_TITLE)
 
+    def field_rows(self):
+        return {int(frame.grid_info()["row"]) for frame, _ in self.app._fields}
+
     def test_fields_in_one_row_when_wide_and_wrap_when_narrow(self):
         app = self.app
-        self.show("1400x800")
-        rows = {int(frame.grid_info()["row"]) for frame, _ in app._fields}
-        self.assertEqual(rows, {0}, "Geniş pencerede altı alan tek satırda")
-        self.show("700x800")
-        rows = {int(frame.grid_info()["row"]) for frame, _ in app._fields}
-        self.assertEqual(rows, {0, 1}, "Dar pencerede alanlar iki satıra iner")
+        self.relayout("1400x760", 300)
+        self.assertEqual(self.field_rows(), {0}, "Geniş pencerede altı alan tek satırda")
+        self.assertEqual(app._fields[0][0].label["text"], "Adım aralığı (ms)")
+        self.relayout("700x760", 300)
+        self.assertEqual(self.field_rows(), {0, 1}, "Dar ve ferah pencerede alanlar iki satıra iner")
         self.assertTrue(all(frame.winfo_ismapped() for frame, _ in app._fields))
+
+    def test_short_labels_keep_fields_in_one_row_in_low_narrow_window(self):
+        app = self.app
+        self.relayout("700x620", 900)
+        self.assertEqual(self.field_rows(), {0})
+        labels = [frame.label["text"] for frame, _ in app._fields]
+        self.assertEqual(labels, ["Adım (ms)", "Kirlenme (sn)", "Seed", "Satır", "Sütun", "Ajan türü"])
 
     def test_seed_placeholder_is_not_a_value(self):
         app = self.app
@@ -112,6 +131,94 @@ class BoardTests(LayoutTestCase):
         self.assertEqual(str(app.canvas["background"]), theme.COLORS["card"])
 
 
+class BoardSizeTests(LayoutTestCase):
+    def test_low_board_keeps_panels_side_by_side_and_hides_legends(self):
+        app = self.app
+        app.agent_var.set("Model Tabanlı Ajan")
+        app.rows_var.set("3")
+        app.cols_var.set("3")
+        self.relayout("700x620", 900)
+        self.assertEqual(int(app.model_frame.grid_info()["column"]), 1, "Alçak tahta: yan yana")
+        self.assertEqual(app.env_legend.winfo_manager(), "", "Çok alçak kartta açıklama gizli")
+        self.assertGreater(app.canvas.winfo_height(), 20)
+        self.assertGreater(app.model_canvas.winfo_height(), 20)
+
+    def test_legends_return_when_there_is_room(self):
+        app = self.app
+        app.agent_var.set("Model Tabanlı Ajan")
+        self.relayout("700x620", 900)
+        with mock.patch("gui.LEGEND_MIN_PANEL_HEIGHT", 0):
+            app._board_layout = None
+            app._layout_board()
+            self.root.update()
+            self.assertEqual(app.env_legend.winfo_manager(), "pack")
+            self.assertEqual(app.model_legend.winfo_manager(), "pack")
+
+
+class StatsTests(LayoutTestCase):
+    def visible(self):
+        return [key for key, cell in self.app.stat_cells.items() if cell.winfo_manager() == "grid"]
+
+    def test_cards_depend_on_agent_capabilities(self):
+        app = self.app
+        self.show("1440x800")
+        self.assertNotIn("known", self.visible())
+        self.assertNotIn("target", self.visible())
+        app.agent_var.set("Model Tabanlı Ajan")
+        self.root.update()
+        self.assertIn("known", self.visible())
+        self.assertNotIn("target", self.visible())
+        app.agent_var.set("Amaç Tabanlı Ajan")
+        self.root.update()
+        self.assertIn("target", self.visible())
+
+    def test_values_follow_simulation(self):
+        app = self.app
+        self.show("1440x800")
+        self.assertEqual(app.stat_vars["state"].get(), "Hazır")
+        self.assertEqual(app.stat_vars["size"].get(), "1 × 2")
+        app.start()
+        app.step_timer.cancel()
+        app.dirt_timer.cancel()
+        for _ in range(5):
+            app._on_step_timer()
+            app.step_timer.cancel()
+        sim = app.simulation
+        self.assertEqual(app.stat_vars["state"].get(), "Çalışıyor")
+        self.assertEqual(app.stat_vars["steps"].get(), str(sim.step_count))
+        self.assertEqual(app.stat_vars["cleans"].get(), str(sim.clean_count))
+        self.assertEqual(app.stat_vars["moves"].get(), str(sim.move_count))
+        self.assertIn("Durum: Çalışıyor", app.status_summary())
+        app.toggle_pause()
+        self.assertEqual(app.stat_vars["state"].get(), "Duraklatıldı")
+        self.assertEqual(str(app._stat_values["state"].cget("foreground")), theme.COLORS["warning"])
+        app.stop()
+        self.assertEqual(app.stat_vars["state"].get(), "Durduruldu")
+
+    def test_one_row_when_wide_several_rows_when_narrow(self):
+        app = self.app
+        app.agent_var.set("Amaç Tabanlı Ajan")
+        self.relayout("1440x760", 300)
+        rows = {int(app.stat_cells[k].grid_info()["row"]) for k in self.visible()}
+        self.assertEqual(rows, {0})
+        self.relayout("700x760", 300)
+        rows = {int(app.stat_cells[k].grid_info()["row"]) for k in self.visible()}
+        self.assertGreater(len(rows), 1)
+        for key in self.visible():                       # değerler kesilmeden sığar
+            cell = app.stat_cells[key]
+            self.assertGreaterEqual(cell.winfo_width() + 2, cell.texts.winfo_reqwidth())
+
+    def test_compact_window_hides_title_and_icons_if_cards_wrap(self):
+        app = self.app
+        app.agent_var.set("Amaç Tabanlı Ajan")
+        self.relayout("700x620", 900)
+        self.assertFalse(app.status_title.winfo_ismapped())
+        if app._stat_icons:
+            self.assertFalse(any(icon.winfo_ismapped() for icon in app._stat_icons.values()))
+        self.relayout("1440x760", 300)
+        self.assertTrue(app.status_title.winfo_ismapped())
+
+
 class ControlTests(LayoutTestCase):
     def test_buttons_keep_their_words(self):
         app = self.app
@@ -140,14 +247,6 @@ class ControlTests(LayoutTestCase):
         else:
             self.assertEqual(str(app.start_button.cget("style")), "Start.TButton")
         self.assertEqual(str(app.stop_button.cget("style")), "Stop.TButton")
-
-    def relayout(self, geometry, compact_height):
-        """Ekran yüksekliğinden bağımsız sınamak için sıkı yerleşim eşiği değiştirilir."""
-        with mock.patch("gui.COMPACT_HEIGHT", compact_height):
-            self.show(geometry)
-            self.app._density = None
-            self.app._update_density()
-            self.root.update()
 
     def test_shortcut_badge_moves_or_folds_into_note(self):
         app = self.app

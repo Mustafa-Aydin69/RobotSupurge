@@ -584,7 +584,7 @@ class WindowTests(unittest.TestCase):
         app.start()
         self.pump(0.5)
         self.assertEqual(app.simulation.agent_type, "goal")
-        self.assertIn("Bilinen oda", app.status_var.get())
+        self.assertIn("Bilinen oda", app.status_summary())
 
     def test_model_panel_starts_unknown_and_follows_snapshot(self):
         app = self.app
@@ -657,15 +657,17 @@ class WindowTests(unittest.TestCase):
         self.root.geometry("1100x760")
         self.root.update()
         self.assertEqual(int(app.model_frame.grid_info()["column"]), 1)
-        self.root.geometry("700x1000")
-        self.root.update()
-        self.assertEqual(int(app.model_frame.grid_info()["row"]), 1)
-        self.assertEqual(int(app.model_frame.grid_info()["column"]), 0)
+        # Genişlik kuralı: dar tahtada alt alta (alçak tahta kuralı test_gui_layout'ta sınanır).
+        with mock.patch("gui.PANEL_MIN_HEIGHT", 0):
+            self.root.geometry("700x1000")
+            self.root.update()
+            self.assertEqual(int(app.model_frame.grid_info()["row"]), 1)
+            self.assertEqual(int(app.model_frame.grid_info()["column"]), 0)
         self.assertTrue(app.start_button.winfo_ismapped())
         self.assertTrue(app.log_text.winfo_ismapped())
 
     def test_status_line_is_shown_at_startup(self):
-        self.assertIn("Hazır", self.app.status_var.get())
+        self.assertIn("Hazır", self.app.status_summary())
 
     def test_real_panel_uses_full_width_without_model(self):
         app = self.app
@@ -745,7 +747,7 @@ class WindowTests(unittest.TestCase):
         # Gerçek ortamda yalnızca hedef işareti var; rota çizilmez.
         self.assertEqual(len(app.canvas.find_withtag("env-target")), 1)
         self.assertEqual(len(app.canvas.find_withtag("plan-route")), 0)
-        self.assertIn(f"Hedef: {plan.target.room}", app.status_var.get())
+        self.assertIn(f"Hedef: {plan.target.room}", app.status_summary())
 
     def test_goal_change_lines_do_not_count_as_steps(self):
         app = self.start_goal()
@@ -827,7 +829,7 @@ class WindowTests(unittest.TestCase):
         app = self.start_goal()
         self.pump(1.0)
         app.toggle_pause()
-        texts = [line for line in self.log_lines() if line.startswith("Hedef")] + [app.status_var.get()]
+        texts = [line for line in self.log_lines() if line.startswith("Hedef")] + [app.status_summary()]
         self.assertTrue(texts)
         for text in texts:
             self.assertNotIn("olasılık", text)
@@ -850,7 +852,7 @@ class WindowTests(unittest.TestCase):
 
     def shown_elapsed(self):
         import re
-        minutes, seconds = re.search(r"Süre: (\d+):(\d+\.\d)", self.app.status_var.get()).groups()
+        minutes, seconds = re.search(r"Süre: (\d+):(\d+\.\d)", self.app.status_summary()).groups()
         return int(minutes) * 60 + float(seconds)
 
     def test_clock_updates_without_steps(self):
