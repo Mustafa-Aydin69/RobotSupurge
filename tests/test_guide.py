@@ -536,5 +536,63 @@ class GuideFlowTests(AppTestCase):
         self.shell.close()
 
 
+class DiagnosticsTests(AppTestCase):
+    """ROBOT_DIAG_LOG tanılama günlüğü (pencereli EXE'de hataların görülebilmesi için)."""
+
+    def setUp(self):
+        super().setUp()
+        import tempfile
+        folder = tempfile.mkdtemp()
+        self.path = folder + "/tani.txt"
+        self.addCleanup(lambda: __import__("shutil").rmtree(folder, ignore_errors=True))
+
+    def read(self):
+        try:
+            with open(self.path, encoding="utf-8") as handle:
+                return handle.read()
+        except FileNotFoundError:
+            return ""
+
+    def test_logs_callback_and_tcl_errors(self):
+        from gui import install_diagnostics
+        install_diagnostics(self.root, self.path)
+        try:
+            raise ValueError("deneme hatası")
+        except ValueError as exc:
+            self.root.report_callback_exception(type(exc), exc, exc.__traceback__)
+        self.root.tk.call("after", 1, "robot_olmayan_komut")
+        self.pump(0.1)
+        text = self.read()
+        self.assertIn("HATA (geri çağırma)", text)
+        self.assertIn("deneme hatası", text)
+        self.assertIn("HATA (Tcl)", text)
+        self.assertIn("robot_olmayan_komut", text)
+
+    def test_shell_reports_transitions_and_clean_close(self):
+        from gui import AppShell, install_diagnostics
+        write = install_diagnostics(self.root, self.path)
+        self.root.deiconify()
+        shell = AppShell(self.root, diagnostics=write)
+        self.root.update()
+        shell.show_guide()
+        self.root.update()
+        shell.tour.show_step(15)
+        shell.tour.play_button.invoke()
+        shell.app.go_home()
+        shell.close()
+        lines = self.read().splitlines()
+        self.assertEqual([line.split(":")[0] for line in lines],
+                         ["açılış ekranı", "rehber", "simülasyon", "açılış ekranı", "kapanış (ekranlar kaldırıldı)"])
+        self.assertIn("bekleyen_after=0 [] alt_pencereler=[]", lines[-1])
+        self.assertNotIn("HATA", self.read())
+
+    def test_run_uses_log_only_when_requested(self):
+        import gui
+        with mock.patch.dict("os.environ", {gui.DIAGNOSTIC_LOG_ENV: self.path}),                 mock.patch.object(gui.tk, "Tk", return_value=self.root),                 mock.patch.object(self.root, "mainloop"), mock.patch.object(gui, "AppShell") as shell:
+            gui.run()
+        self.assertTrue(callable(shell.call_args.kwargs["diagnostics"]))
+        self.assertIn("başlangıç", self.read())
+
+
 if __name__ == "__main__":
     unittest.main()

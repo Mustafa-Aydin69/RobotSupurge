@@ -12,6 +12,7 @@ Zamanlayıcılar duraklatıldığında kalan sürelerini korur ve devam edildiğ
 o süreden devam eder.
 """
 
+import os
 import sys
 import tkinter as tk
 from collections import deque
@@ -1379,6 +1380,34 @@ def configure_window_size(root, scale):
     root.minsize(min(round(MIN_WINDOW_WIDTH * scale), width), min(round(MIN_WINDOW_HEIGHT * scale), height))
 
 
+DIAGNOSTIC_LOG_ENV = "ROBOT_DIAG_LOG"
+
+
+def install_diagnostics(root, path):
+    """Tanılama günlüğü (yalnızca ``ROBOT_DIAG_LOG`` tanımlıyken kullanılır).
+
+    Pencereli EXE'de hata çıktısı görünmez. Bu günlük, geri çağırmalardaki
+    Python hatalarını ve Tcl arka plan hatalarını (ör. "invalid command name")
+    dosyaya yazar. Program davranışını değiştirmez. Yazma fonksiyonunu döndürür.
+    """
+    import traceback
+
+    def write(line):
+        try:
+            with open(path, "a", encoding="utf-8") as handle:
+                handle.write(line + "\n")
+        except OSError:
+            pass
+
+    def on_exception(exc_type, value, tb):
+        write("HATA (geri çağırma): " + "".join(traceback.format_exception(exc_type, value, tb)).strip())
+
+    root.report_callback_exception = on_exception
+    root.tk.createcommand("robot_background_error", lambda message: write(f"HATA (Tcl): {message}"))
+    root.tk.eval("proc bgerror {message} {robot_background_error $message}")
+    return write
+
+
 class AppShell:
     """Tek ana pencerede ekranlar arası geçiş: açılış, rehber ve simülasyon.
 
@@ -1386,13 +1415,14 @@ class AppShell:
     bileşenler); yeni bir Tk kök penceresi oluşturulmaz.
     """
 
-    def __init__(self, root):
+    def __init__(self, root, diagnostics=None):
         self.root = root
         self.scale = ui_scale(root)
         self.style = theme.setup(root, self.scale)
         self.screen = None          # WelcomeScreen
         self.app = None             # VacuumApp (simülasyon ekranı; rehberde de kullanılır)
         self.tour = None            # guide.GuideTour (etkileşimli rehber)
+        self.diagnostics = diagnostics  # tanılama günlüğüne yazan fonksiyon (isteğe bağlı)
         root.title(APP_TITLE)
         configure_window_size(root, self.scale)
         root.protocol("WM_DELETE_WINDOW", self.close)
@@ -1410,6 +1440,7 @@ class AppShell:
         self._clear()
         self.screen = WelcomeScreen(self.root, self.scale, on_play=self.show_simulation,
                                     on_guide=self.show_guide)
+        self._report("açılış ekranı")
 
     def show_guide(self, dim=True):
         """Etkileşimli rehber: gerçek simülasyon ekranı, zamanlayıcısız örnek ve üstünde rehber katmanı."""
@@ -1420,10 +1451,12 @@ class AppShell:
         self.app.prepare_guide_demo()
         self.tour = GuideTour(self.app, GUIDE_STEPS, on_home=self.show_welcome, on_play=self.show_simulation,
                               scale=self.scale, dim=dim)
+        self._report("rehber")
 
     def show_simulation(self):
         self._clear()
         self.app = VacuumApp(self.root, on_home=self.show_welcome)
+        self._report("simülasyon")
 
     def _clear(self):
         if self.tour is not None:           # önce rehber katmanı ve kilitler kaldırılır
@@ -1442,11 +1475,28 @@ class AppShell:
 
     def close(self):
         self._clear()
+        self._report("kapanış (ekranlar kaldırıldı)")
         self.root.destroy()
+
+    def _report(self, event):
+        """Tanılama günlüğüne geçişi, bekleyen tetiklemeleri ve açık alt pencereleri yazar."""
+        if self.diagnostics is None:
+            return
+        jobs = self.root.tk.splitlist(self.root.tk.call("after", "info"))
+        scripts = [str(self.root.tk.splitlist(self.root.tk.call("after", "info", job))[0]) for job in jobs]
+        windows = [w.winfo_class() for w in self.root.winfo_children() if isinstance(w, tk.Toplevel)]
+        self.diagnostics(f"{event}: ekran={self.current} bekleyen_after={len(jobs)} {scripts} "
+                         f"alt_pencereler={windows}")
 
 
 def run():
     enable_windows_dpi_awareness()
     root = tk.Tk()
-    AppShell(root)
+    log_path = os.environ.get(DIAGNOSTIC_LOG_ENV)
+    write = install_diagnostics(root, log_path) if log_path else None
+    if write is None:
+        AppShell(root)
+    else:
+        write("başlangıç")
+        AppShell(root, diagnostics=write)
     root.mainloop()
