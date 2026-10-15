@@ -182,7 +182,7 @@ illüstrasyonu, sağda başlık, kısa açıklama ve iki düğme, altta dört ö
 | Düğme | İşlev |
 |---|---|
 | **Oyna** (Enter) | Simülasyon ekranını aynı pencerede açar. |
-| **Nasıl Oynanır?** | Rehber ekranını açar: adımlar arasında İleri/Geri, Ana Menü ve Oyna. Rehber şimdilik kısa bir tanıtımdır; bölüm bölüm etkileşimli rehber sonraki sürümde eklenecektir. |
+| **Nasıl Oynanır?** | 16 adımlık etkileşimli rehberi açar (aşağıya bakın). |
 | **Ana Menü** (simülasyon ekranında, başlığın sağında) | Çalışan simülasyonu durdurur, zamanlayıcıları iptal eder, açık karşılaştırma penceresini kapatır ve açılış ekranına döner. Yeniden Oyna yeni bir oturum açar. |
 
 Bütün ekranlar aynı ana pencerede açılır. İllüstrasyon ve simgeler referans
@@ -191,6 +191,28 @@ tasarımdan kırpılmış görsellerdir (`assets/welcome/`); kaynak koda
 ile yeniden üretilir. Başlık, açıklama ve düğmeler gerçek arayüz
 bileşenleridir. Dar pencerede illüstrasyon küçülerek üste geçer, özellikler iki
 satıra iner; düğmeler her boyutta görünür kalır.
+
+## Nasıl Oynanır? rehberi
+
+Rehber gerçek simülasyon ekranının üzerinde çalışır ve arayüzü sırayla
+tanıtır: adım aralığı, kirlenme aralığı, seed, satır, sütun, ajan türü,
+Başlat, Duraklat/Devam, Durdur, Ajanları Karşılaştır, gerçek ortam, ajanın
+iç modeli, hedef ve rota, simülasyon durumu, algı ve eylem günlüğü ve Ana
+Menü (16 adım).
+
+- Her adımda ilgili bileşen aydınlık bırakılır ve mavi çerçeveyle
+  vurgulanır; pencerenin geri kalanı yarı saydam lacivertle karartılır.
+  Açıklama kutusu hedefi kapatmayacak biçimde yerleşir; dar pencerede
+  daralır.
+- Örnek ortam 3×3 ve amaç tabanlı ajandır (seed 299). Gerçek simülasyon
+  zamanlayıcı kullanılmadan 14 adım ilerletilip duraklatılır; iç modeldeki
+  bilinen, bilinmeyen ve eski odalar, hedef ve rota gerçek veridir. Rehber
+  açıkken simülasyon ilerlemez, ayarlar ve düğmeler kullanılamaz.
+- İleri: Sağ ok ya da Enter. Geri: Sol ok. Ana Menü: Esc. Son adımda
+  "Ana Menü'ye Dön" ve "Oyna" seçenekleri vardır; Oyna temiz bir
+  simülasyon açar.
+- Saydamlık desteklenmeyen sistemlerde karartma yapılmaz; vurgu çerçevesi
+  ve açıklama kutusu gösterilir.
 
 ## Arayüz rehberi
 
@@ -405,3 +427,4 @@ doğrulanır (`tests/test_submission.py`).
 - [ ] Çok odalı grid (ör. 3×4, 6×6) ve model/amaç tabanlı ajanlar çalışıyor.
 - [ ] `python main.py --self-test` ya da EXE ile `--self-test` 9/9 başarılı (tema satırında "ttkbootstrap 1.14.7").
 - [ ] Program açılış ekranıyla açılıyor; Oyna simülasyonu, Ana Menü açılış ekranını açıyor.
+- [ ] Nasıl Oynanır? rehberinin 16 adımı İleri/Geri ile dolaşılıyor; son adımda Oyna çalışıyor.
