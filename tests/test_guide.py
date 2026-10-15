@@ -2,10 +2,14 @@
 
 import tkinter as tk
 import unittest
+from unittest import mock
 
+import guide
+from guide import GuideTour, fallback_card, intersects, place_card
 from gui import GUIDE_DEMO_SEED, GUIDE_DEMO_STEPS, GUIDE_LOCK_TAG, VacuumApp
 from simulation import SimulationState
 from views import MODEL_STALE, MODEL_UNKNOWN, model_category, stale_threshold
+from welcome import GuideStep
 
 TARGET_KEYS = ("step", "dirt", "seed", "rows", "cols", "agent", "start", "pause", "stop", "compare",
                "environment", "model", "plan", "status", "log", "home")
@@ -157,6 +161,245 @@ class GuideHookTests(AppTestCase):
         self.assertFalse(app.interaction_locked)
         self.assertIs(app.simulation.state, SimulationState.STOPPED)
         self.assertEqual(self.pending_after_jobs(), ())
+
+
+class PlaceCardTests(unittest.TestCase):
+    """Açıklama kutusu yerleşimi (arayüzden bağımsız)."""
+
+    def assert_valid(self, result, target, window, card, margin=12):
+        self.assertIsNotNone(result)
+        x, y, _ = result
+        rect = (x, y, x + card[0], y + card[1])
+        self.assertFalse(intersects(rect, target))
+        self.assertGreaterEqual(x, margin)
+        self.assertGreaterEqual(y, margin)
+        self.assertLessEqual(rect[2], window[0] - margin)
+        self.assertLessEqual(rect[3], window[1] - margin)
+
+    def test_prefers_below_then_above_then_sides(self):
+        window, card = (1400, 900), (400, 240)
+        self.assertEqual(place_card((100, 100, 300, 160), window, card)[2], "below")
+        self.assertEqual(place_card((100, 700, 300, 860), window, card)[2], "above")
+        self.assertEqual(place_card((100, 200, 300, 800), window, card)[2], "right")
+        self.assertEqual(place_card((900, 200, 1380, 800), window, card)[2], "left")
+
+    def test_result_never_covers_target_and_stays_inside(self):
+        window, card = (1000, 760), (360, 220)
+        for target in [(10, 10, 200, 60), (400, 300, 600, 420), (700, 600, 990, 750), (20, 200, 980, 260)]:
+            with self.subTest(target=target):
+                self.assert_valid(place_card(target, window, card), target, window, card)
+
+    def test_no_position_when_target_fills_window(self):
+        self.assertIsNone(place_card((0, 0, 680, 700), (680, 720), (300, 200)))
+
+    def test_fallback_minimises_overlap(self):
+        target, window, card = (0, 0, 680, 560), (680, 720), (300, 200)
+        x, y, side = fallback_card(target, window, card)
+        self.assertEqual(side, "overlap")
+        overlap = guide.overlap_area((x, y, x + card[0], y + card[1]), target)
+        self.assertLessEqual(overlap, card[0] * card[1] * 0.5)
+        self.assertGreaterEqual(y, 400)                      # hedeften uzak, alt bölgede
+
+
+ALL_STEPS = tuple(GuideStep(f"Başlık {key}", f"Açıklama {key}.", key) for key in TARGET_KEYS)
+
+
+class GuideTourTests(AppTestCase):
+    def setUp(self):
+        super().setUp()
+        self.events = []
+        self.app = VacuumApp(self.root, on_home=lambda: None)
+        self.app.prepare_guide_demo()
+        self.root.deiconify()
+        self.root.geometry("1300x860+20+20")
+        self.root.update()
+        self.tour = None
+        self.addCleanup(self.cleanup_tour)
+
+    def cleanup_tour(self):
+        if self.tour is not None and self.root_alive():
+            self.tour.destroy()
+            self.app.shutdown()
+
+    def start(self, steps=ALL_STEPS, dim=True):
+        self.tour = GuideTour(self.app, steps, on_home=lambda: self.events.append("home"),
+                              on_play=lambda: self.events.append("play"), dim=dim)
+        self.root.update()
+        self.tour.reposition()
+        self.root.update()
+        return self.tour
+
+    def test_unknown_target_is_rejected(self):
+        with self.assertRaises(ValueError):
+            GuideTour(self.app, (GuideStep("x", "y", "yok"),))
+        self.assertFalse(self.app.interaction_locked)
+
+    def test_every_step_highlights_its_target_without_covering_it(self):
+        tour = self.start()
+        for index, key in enumerate(TARGET_KEYS):
+            with self.subTest(step=key):
+                tour.show_step(index)
+                self.root.update()
+                widget = self.app.guide_targets()[key]
+                self.assertTrue(widget.winfo_ismapped())
+                hole = tour.hole_rect()
+                target = tour.target_rect()
+                self.assertTrue(hole[0] <= target[0] and hole[1] <= target[1])
+                self.assertTrue(hole[2] >= min(target[2], self.root.winfo_width()))
+                self.assertNotEqual(tour.card_side, "overlap")
+                self.assertFalse(intersects(tour.card_rect(), hole))
+                # Vurgu çerçevesi deliğin kenarında.
+                top = tour.ring[0]
+                self.assertEqual((top.winfo_x(), top.winfo_y()), (hole[0], hole[1]))
+
+    def test_dim_overlay_matches_window_and_has_a_hole(self):
+        tour = self.start()
+        if tour.overlay is None:
+            self.skipTest("Bu sistemde saydam katman desteklenmiyor")
+        overlay = tour.overlay
+        self.assertEqual(float(overlay.attributes("-alpha")), guide.DIM_ALPHA)
+        self.assertEqual((overlay.winfo_rootx(), overlay.winfo_rooty()),
+                         (self.root.winfo_rootx(), self.root.winfo_rooty()))
+        self.assertEqual((overlay.winfo_width(), overlay.winfo_height()),
+                         (self.root.winfo_width(), self.root.winfo_height()))
+        holes = tour.dim_canvas.find_withtag("hole")
+        self.assertEqual(len(holes), 1)
+        self.assertEqual(tuple(round(v) for v in tour.dim_canvas.coords(holes[0])), tour.hole_rect())
+
+    def test_next_back_and_keyboard(self):
+        tour = self.start()
+        self.assertEqual(str(tour.back_button["state"]), "disabled")
+        tour.next()
+        tour.next()
+        self.assertEqual(tour.navigator.index, 2)
+        tour.back()
+        self.assertEqual(tour.navigator.index, 1)
+        bindings = self.root.bind()
+        for sequence in ("<Key-Right>", "<Key-Return>", "<Key-Left>", "<Key-Escape>"):
+            self.assertIn(sequence, bindings)
+        self.root.focus_force()                           # tuş olayları odaklı pencereye gider
+        self.root.update()
+        self.root.event_generate("<Right>")
+        self.root.update()
+        self.assertEqual(tour.navigator.index, 2)
+        self.root.event_generate("<Left>")
+        self.root.update()
+        self.assertEqual(tour.navigator.index, 1)
+        tour.show_step(0)
+        tour.back()                                       # sınırda etkisiz
+        self.assertEqual(tour.navigator.index, 0)
+        self.root.event_generate("<Escape>")
+        self.root.update()
+        self.assertEqual(self.events, ["home"])
+
+    def test_last_step_offers_home_and_play(self):
+        tour = self.start()
+        tour.show_step(len(ALL_STEPS) - 1)
+        self.root.update()
+        self.assertTrue(tour.finish_home_button.winfo_ismapped())
+        self.assertTrue(tour.play_button.winfo_ismapped())
+        self.assertFalse(tour.next_button.winfo_ismapped())
+        self.assertEqual(tour.finish_home_button["text"], "Ana Menü'ye Dön")
+        tour.next()                                       # son adımda ileri yok
+        self.assertTrue(tour.is_last)
+        tour.play_button.invoke()
+        tour.finish_home_button.invoke()
+        self.assertEqual(self.events, ["play", "home"])
+
+    def test_simulation_does_not_advance_and_controls_are_locked(self):
+        tour = self.start()
+        steps = self.app.simulation.step_count
+        self.assertTrue(self.app.interaction_locked)
+        for _ in range(3):
+            tour.next()
+        self.pump(0.5)
+        self.assertEqual(self.app.simulation.step_count, steps)
+        self.assertFalse(self.app.step_timer.is_pending)
+        self.assertFalse(self.app.dirt_timer.is_pending)
+
+    def test_destroy_removes_everything(self):
+        tour = self.start()
+        before_children = set(self.root.winfo_children())
+        tour._schedule_reposition()                       # bekleyen tetikleme de iptal edilmeli
+        tour.destroy()
+        self.tour = None
+        self.assertFalse(self.app.interaction_locked)
+        self.assertEqual([w for w in self.root.winfo_children() if isinstance(w, tk.Toplevel)], [])
+        self.assertTrue(all(not frame.winfo_exists() for frame in tour.ring))
+        self.assertLess(len(self.root.winfo_children()), len(before_children))
+        self.assertEqual(self.pending_after_jobs(), ())
+        bindings = self.root.bind()
+        self.assertNotIn("<Key-Right>", bindings)
+        self.assertNotIn("<Key-Left>", bindings)
+        self.assertIn("<Key-space>", bindings)           # simülasyon kısayolları geri geldi
+        self.app.shutdown()
+
+    def test_follows_window_resize_and_move(self):
+        tour = self.start()
+        tour.show_step(TARGET_KEYS.index("log"))
+        for geometry in ("1000x760+60+40", "760x720+10+10", "1400x900+0+0"):
+            with self.subTest(geometry=geometry):
+                self.root.geometry(geometry)
+                self.root.update()
+                self.pump(0.15)                           # gecikmeli yeniden yerleşim
+                self.assertFalse(intersects(tour.card_rect(), tour.hole_rect()))
+                if tour.overlay is not None:
+                    self.assertEqual((tour.overlay.winfo_width(), tour.overlay.winfo_height()),
+                                     (self.root.winfo_width(), self.root.winfo_height()))
+                    self.assertEqual(tour.overlay.winfo_rootx(), self.root.winfo_rootx())
+
+    def test_minimize_and_restore(self):
+        tour = self.start()
+        self.root.iconify()
+        self.root.update()
+        self.pump(0.2)
+        self.assertEqual(tour.card.state(), "withdrawn")
+        if tour.overlay is not None:
+            self.assertEqual(tour.overlay.state(), "withdrawn")
+        self.root.deiconify()
+        self.root.update()
+        self.pump(0.3)
+        self.assertEqual(tour.card.state(), "normal")
+        if tour.overlay is not None:
+            self.assertEqual(tour.overlay.state(), "normal")
+
+    def test_without_transparency_shows_ring_and_card_only(self):
+        tour = self.start(dim=False)
+        self.assertIsNone(tour.overlay)
+        self.assertTrue(tour.ring[0].winfo_ismapped())
+        self.assertEqual(tour.card.state(), "normal")
+        tour.next()
+        tour.destroy()
+        self.tour = None
+        self.assertEqual([w for w in self.root.winfo_children() if isinstance(w, tk.Toplevel)], [])
+        self.app.shutdown()
+
+    def test_unsupported_transparency_falls_back_safely(self):
+        real = tk.Toplevel.attributes
+
+        def no_transparency(widget, *args):
+            if args and args[0] == "-transparentcolor":
+                raise tk.TclError("desteklenmiyor")
+            return real(widget, *args)
+
+        with mock.patch.object(tk.Toplevel, "attributes", no_transparency):
+            tour = self.start()
+        self.assertIsNone(tour.overlay)
+        self.assertEqual([w for w in self.root.winfo_children() if isinstance(w, tk.Toplevel)], [tour.card])
+
+    def test_narrow_window_keeps_card_off_targets(self):
+        tour = self.start()
+        self.root.geometry("680x720")
+        self.root.update()
+        for index in range(len(ALL_STEPS)):
+            with self.subTest(step=TARGET_KEYS[index]):
+                tour.show_step(index)
+                self.root.update()
+                card = tour.card_rect()
+                self.assertFalse(intersects(card, tour.hole_rect()))
+                self.assertGreaterEqual(card[0], 0)
+                self.assertLessEqual(card[2], self.root.winfo_width())
+                self.assertLessEqual(card[3], self.root.winfo_height())
 
 
 if __name__ == "__main__":
