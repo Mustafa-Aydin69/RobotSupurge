@@ -101,6 +101,21 @@ STATE_STYLE = {                 # durum: (simge, renk anahtarı)
     SimulationState.STOPPED: ("state_stopped", "danger"),
 }
 
+# Rehberin örnek simülasyonu: 3×3, amaç tabanlı ajan. Seed, adım sayısı ve
+# kirlenme sıklığı, gerçek simülasyonda iç modelde bilinen, bilinmeyen ve eski
+# odaların, kirli odaların ve boş olmayan bir rotanın birlikte görüldüğü bir
+# an seçilerek belirlendi (tests/test_guide.py bunu denetler).
+GUIDE_DEMO_SEED = 299
+GUIDE_DEMO_STEPS = 14
+GUIDE_DEMO_DIRT_EVERY = 4
+
+# Rehber sırasında etkileşimli bileşenlerin olaylarını durduran bağlama etiketi.
+GUIDE_LOCK_TAG = "RobotGuideLock"
+GUIDE_LOCKED_EVENTS = (
+    "<Button>", "<ButtonRelease>", "<Double-Button>", "<Triple-Button>", "<B1-Motion>", "<B2-Motion>",
+    "<B3-Motion>", "<Key>", "<KeyRelease>", "<MouseWheel>", "<Shift-MouseWheel>",
+)
+
 TWO_ROOM_MODEL_NOTE = (
     "Not: 1×2 ortamda her odadan yalnızca bir geçerli hareket olduğu için bu ajanın "
     "hareketleri refleks ajanla aynı olabilir. Fark iç modelde görülür."
@@ -982,10 +997,101 @@ class VacuumApp:
             self.simulation.stop()
         if self.compare_window is not None and not self.compare_window.closed:
             self.compare_window.close()
+        self.set_interaction_locked(False)
         for sequence in ("<space>", "<Escape>", "<Configure>"):
             self.root.unbind(sequence)
         for widget in (self.header, self.settings_card, self.board, self.status_card, self.log_card):
             widget.destroy()
+
+    # ------------------------------------------------------------------
+    # Etkileşimli rehber için kancalar (rehber guide.py'dedir)
+    # ------------------------------------------------------------------
+    def guide_targets(self):
+        """Rehberin vurguladığı gerçek bileşenler: ``{anahtar: bileşen}``."""
+        fields = [frame for frame, _ in self._fields]
+        targets = {
+            "step": fields[0], "dirt": fields[1], "seed": fields[2], "rows": fields[3], "cols": fields[4],
+            "agent": fields[5],
+            "start": self.start_button, "pause": self.pause_button, "stop": self.stop_button,
+            "compare": self.compare_button,
+            "environment": self.env_frame, "model": self.model_frame, "plan": self.model_canvas,
+            "status": self.status_card, "log": self.log_card,
+        }
+        if self.home_button is not None:
+            targets["home"] = self.home_button
+        return targets
+
+    def prepare_guide_demo(self, seed=GUIDE_DEMO_SEED, steps=GUIDE_DEMO_STEPS, dirt_every=GUIDE_DEMO_DIRT_EVERY):
+        """Rehber için örnek: 3×3, amaç tabanlı ajan.
+
+        Gerçek ``Simulation`` API'siyle zamanlayıcı kullanmadan ``steps`` adım
+        ilerletilir (her ``dirt_every`` adımda bir kirlenme tetiklemesi) ve
+        duraklatılmış bırakılır. Adım ve kirlenme zamanlayıcıları hiç
+        başlatılmaz; rehber açıkken simülasyon kendiliğinden ilerlemez.
+        """
+        self._cancel_timers()
+        self.rows_var.set("3")
+        self.cols_var.set("3")
+        self.agent_var.set(AGENT_TYPE_TEXT["goal"])
+        self.seed_var.set(str(seed))
+        self._last_plan_version = 0
+        self.simulation = Simulation(seed=seed, rows=3, cols=3, agent_type="goal")
+        self._last_action = None
+        self._clear_log()
+        self._append_log(self._start_message(seed), "info")
+        self.simulation.start()
+        for index in range(1, steps + 1):
+            record = self.simulation.step()
+            self._last_action = record.action
+            self._log_record(record)
+            self._log_goal_change()
+            if dirt_every and index % dirt_every == 0:
+                dirt = self.simulation.dirty_tick()
+                if dirt is not None:
+                    self._log_record(dirt)
+        self.simulation.pause()
+        self._refresh()
+
+    def set_interaction_locked(self, locked):
+        """Rehber kilidi: bütün etkileşimli bileşenlerin fare, klavye ve kaydırma olayları durdurulur.
+
+        Bileşenlerin durumu ve görünümü değişmez; olay zincirlerinin başına
+        bir bağlama etiketi eklenir ve kilit kaldırılınca özgün zincir aynen
+        geri yüklenir. Boşluk ve Esc kısayolları kilit süresince kaldırılır.
+        """
+        if locked == bool(getattr(self, "_locked_bindtags", None)):
+            return
+        if locked:
+            for sequence in GUIDE_LOCKED_EVENTS:
+                self.root.bind_class(GUIDE_LOCK_TAG, sequence, lambda _e: "break")
+            self._locked_bindtags = {}
+            for widget in self._interactive_widgets():
+                tags = widget.bindtags()
+                self._locked_bindtags[widget] = tags
+                widget.bindtags((GUIDE_LOCK_TAG,) + tuple(tags))
+            self.root.unbind("<space>")
+            self.root.unbind("<Escape>")
+            self.root.focus_set()
+        else:
+            for widget, tags in self._locked_bindtags.items():
+                if widget.winfo_exists():
+                    widget.bindtags(tags)
+            self._locked_bindtags = None
+            self.root.bind("<space>", self._on_space_key)
+            self.root.bind("<Escape>", self._on_escape_key)
+
+    @property
+    def interaction_locked(self):
+        return bool(getattr(self, "_locked_bindtags", None))
+
+    def _interactive_widgets(self):
+        """Ekranın bütün bileşenleri (kartlar, alanlar, düğmeler, tuvaller, tablo)."""
+        found, stack = [], [self.header, self.settings_card, self.board, self.status_card, self.log_card]
+        while stack:
+            widget = stack.pop()
+            found.append(widget)
+            stack.extend(widget.winfo_children())
+        return found
 
     def _on_space_key(self, event):
         # Yazı alanlarında boşluk tuşu normal davranışını korur.
