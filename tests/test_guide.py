@@ -9,7 +9,8 @@ from guide import GuideTour, fallback_card, intersects, place_card
 from gui import GUIDE_DEMO_SEED, GUIDE_DEMO_STEPS, GUIDE_LOCK_TAG, VacuumApp
 from simulation import SimulationState
 from views import MODEL_STALE, MODEL_UNKNOWN, model_category, stale_threshold
-from welcome import GuideStep
+from gui import AppShell
+from welcome import GUIDE_STEPS, GuideStep
 
 TARGET_KEYS = ("step", "dirt", "seed", "rows", "cols", "agent", "start", "pause", "stop", "compare",
                "environment", "model", "plan", "status", "log", "home")
@@ -400,6 +401,133 @@ class GuideTourTests(AppTestCase):
                 self.assertGreaterEqual(card[0], 0)
                 self.assertLessEqual(card[2], self.root.winfo_width())
                 self.assertLessEqual(card[3], self.root.winfo_height())
+
+
+class GuideContentTests(unittest.TestCase):
+    def test_sixteen_steps_in_order(self):
+        self.assertEqual(len(GUIDE_STEPS), 16)
+        self.assertEqual(tuple(step.section for step in GUIDE_STEPS), TARGET_KEYS)
+        titles = [step.title for step in GUIDE_STEPS]
+        self.assertEqual(titles[0], "Adım aralığı")
+        self.assertEqual(titles[-1], "Ana Menü'ye dönüş")
+        self.assertEqual(len(set(titles)), 16)
+
+    def test_texts_describe_agents_correctly(self):
+        text = " ".join(step.body for step in GUIDE_STEPS)
+        self.assertIn("makine öğrenmesi yapmaz", text)
+        self.assertIn("geçmiş gözlemlerini", text)
+        self.assertIn("BFS", text)
+        self.assertNotIn("öğrenir", text)
+        agent = next(step for step in GUIDE_STEPS if step.section == "agent").body
+        for word in ("refleks", "Model tabanlı", "Amaç tabanlı"):
+            self.assertIn(word, agent)
+
+    def test_texts_match_application_values(self):
+        from gui import DEFAULT_STEP_MS, MAX_STEP_MS, MIN_STEP_MS
+        bodies = {step.section: step.body for step in GUIDE_STEPS}
+        self.assertIn(str(DEFAULT_STEP_MS), bodies["step"])
+        self.assertTrue(MIN_STEP_MS < DEFAULT_STEP_MS < MAX_STEP_MS)
+        self.assertIn("%30", bodies["dirt"])
+        self.assertIn("1–6", bodies["rows"])
+        self.assertIn("Ekranı", bodies["log"])
+        self.assertIn("Boşluk", bodies["pause"])
+        self.assertIn("Esc", bodies["stop"])
+
+
+class GuideFlowTests(AppTestCase):
+    """Açılış ekranı → Nasıl Oynanır? → 16 adım → Ana Menü / Oyna."""
+
+    def setUp(self):
+        super().setUp()
+        self.shell = AppShell(self.root)
+        self.root.deiconify()
+        self.root.geometry("1300x860+20+20")
+        self.root.update()
+        self.addCleanup(lambda: self.shell.close() if self.root_alive() else None)
+
+    def open_guide(self):
+        self.shell.screen.guide_button.invoke()
+        self.root.update()
+        return self.shell.tour
+
+    def toplevels(self):
+        return [w for w in self.root.winfo_children() if isinstance(w, tk.Toplevel)]
+
+    def test_all_sixteen_steps_work(self):
+        tour = self.open_guide()
+        self.assertEqual(self.shell.current, "guide")
+        self.assertTrue(self.shell.app.interaction_locked)
+        steps_before = self.shell.app.simulation.step_count
+        for index, step in enumerate(GUIDE_STEPS):
+            with self.subTest(step=step.section):
+                self.assertEqual(tour.navigator.index, index)
+                self.assertEqual(tour.title_label["text"], step.title)
+                self.assertEqual(tour.position_label["text"], f"Adım {index + 1} / 16")
+                self.root.update()
+                self.assertTrue(tour.target_widget().winfo_ismapped())
+                self.assertFalse(intersects(tour.card_rect(), tour.hole_rect()))
+                if index < len(GUIDE_STEPS) - 1:
+                    tour.next_button.invoke()
+        self.assertTrue(tour.is_last)
+        self.assertTrue(tour.play_button.winfo_ismapped())
+        self.assertTrue(tour.finish_home_button.winfo_ismapped())
+        self.assertEqual(self.shell.app.simulation.step_count, steps_before)
+
+    def test_home_from_any_step_cleans_up(self):
+        for index in (0, 7, 15):
+            with self.subTest(step=index):
+                tour = self.open_guide()
+                app = self.shell.app
+                tour.show_step(index)
+                tour._schedule_reposition()
+                (tour.finish_home_button if tour.is_last else tour.home_button).invoke()
+                self.assertEqual(self.shell.current, "welcome")
+                self.assertIsNone(self.shell.tour)
+                self.assertIsNone(self.shell.app)
+                self.assertEqual(self.toplevels(), [])
+                self.assertFalse(app.interaction_locked)
+                self.assertIs(app.simulation.state, SimulationState.STOPPED)
+                self.shell.screen.destroy()           # açılış ekranının kendi tetiklemesi hariç
+                self.shell.screen = None
+                self.assertEqual(self.pending_after_jobs(), ())
+                self.shell.show_welcome()
+                self.root.update()
+
+    def test_escape_returns_home(self):
+        self.open_guide()
+        self.root.focus_force()
+        self.root.update()
+        self.root.event_generate("<Escape>")
+        self.root.update()
+        self.assertEqual(self.shell.current, "welcome")
+
+    def test_play_from_last_step_starts_clean_simulation(self):
+        tour = self.open_guide()
+        guide_app = self.shell.app
+        tour.show_step(15)
+        tour.play_button.invoke()
+        self.root.update()
+        app = self.shell.app
+        self.assertEqual(self.shell.current, "simulation")
+        self.assertIsNot(app, guide_app)
+        self.assertIsNone(self.shell.tour)
+        self.assertEqual(self.toplevels(), [])
+        self.assertFalse(app.interaction_locked)
+        self.assertIsNone(app.simulation)                 # rehber örneği taşınmaz
+        self.assertEqual(app.log_entries(), [])
+        self.assertIn("<Key-space>", self.root.bind())
+        app.step_var.set("100")
+        app.start()
+        self.pump(0.4)
+        self.assertGreater(app.simulation.step_count, 0)
+
+    def test_close_window_during_guide(self):
+        tour = self.open_guide()
+        tour.show_step(5)
+        self.shell._clear()
+        self.assertEqual(self.pending_after_jobs(), ())
+        self.assertEqual(self.toplevels(), [])
+        self.shell.close()
 
 
 if __name__ == "__main__":

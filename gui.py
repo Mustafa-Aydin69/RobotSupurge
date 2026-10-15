@@ -1390,8 +1390,9 @@ class AppShell:
         self.root = root
         self.scale = ui_scale(root)
         self.style = theme.setup(root, self.scale)
-        self.screen = None          # WelcomeScreen ya da GuideScreen
-        self.app = None             # VacuumApp (simülasyon ekranı)
+        self.screen = None          # WelcomeScreen
+        self.app = None             # VacuumApp (simülasyon ekranı; rehberde de kullanılır)
+        self.tour = None            # guide.GuideTour (etkileşimli rehber)
         root.title(APP_TITLE)
         configure_window_size(root, self.scale)
         root.protocol("WM_DELETE_WINDOW", self.close)
@@ -1400,10 +1401,9 @@ class AppShell:
     @property
     def current(self):
         """Gösterilen ekran: "welcome", "guide" ya da "simulation"."""
-        from welcome import GuideScreen
-        if self.app is not None:
-            return "simulation"
-        return "guide" if isinstance(self.screen, GuideScreen) else "welcome"
+        if self.tour is not None:
+            return "guide"
+        return "simulation" if self.app is not None else "welcome"
 
     def show_welcome(self):
         from welcome import WelcomeScreen
@@ -1411,16 +1411,24 @@ class AppShell:
         self.screen = WelcomeScreen(self.root, self.scale, on_play=self.show_simulation,
                                     on_guide=self.show_guide)
 
-    def show_guide(self):
-        from welcome import GuideScreen
+    def show_guide(self, dim=True):
+        """Etkileşimli rehber: gerçek simülasyon ekranı, zamanlayıcısız örnek ve üstünde rehber katmanı."""
+        from guide import GuideTour
+        from welcome import GUIDE_STEPS
         self._clear()
-        self.screen = GuideScreen(self.root, self.scale, on_home=self.show_welcome, on_play=self.show_simulation)
+        self.app = VacuumApp(self.root, on_home=self.show_welcome)
+        self.app.prepare_guide_demo()
+        self.tour = GuideTour(self.app, GUIDE_STEPS, on_home=self.show_welcome, on_play=self.show_simulation,
+                              scale=self.scale, dim=dim)
 
     def show_simulation(self):
         self._clear()
         self.app = VacuumApp(self.root, on_home=self.show_welcome)
 
     def _clear(self):
+        if self.tour is not None:           # önce rehber katmanı ve kilitler kaldırılır
+            self.tour.destroy()
+            self.tour = None
         if self.app is not None:
             self.app.shutdown()
             self.app = None

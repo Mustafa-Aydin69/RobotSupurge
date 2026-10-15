@@ -1,9 +1,10 @@
 """Açılış ekranı ve "Nasıl Oynanır?" rehberi.
 
-Bu ekranlar simülasyonla ilgili hiçbir şey bilmez; yalnızca kendilerine
-verilen geri çağırma fonksiyonlarını çalıştırır (Oyna, Nasıl Oynanır?,
-Ana Menü). Ekran geçişlerini ``gui.AppShell`` yönetir; bütün ekranlar aynı
-ana pencerede açılır.
+Açılış ekranı simülasyonla ilgili hiçbir şey bilmez; yalnızca kendisine
+verilen geri çağırma fonksiyonlarını çalıştırır (Oyna, Nasıl Oynanır?).
+Ekran geçişlerini ``gui.AppShell`` yönetir; bütün ekranlar aynı ana
+pencerede açılır. Rehberin içeriği (``GUIDE_STEPS``) ve gezinmesi
+(``GuideNavigator``) burada, gerçek ekran üzerindeki gösterimi ``guide.py``'dedir.
 
 Açılış ekranı tek bir tuvalden oluşur. Soldaki illüstrasyon ve özellik
 simgeleri referans tasarımdan kırpılmış görsellerdir (``welcome_assets``);
@@ -296,25 +297,74 @@ class WelcomeScreen:
 # ----------------------------------------------------------------------
 @dataclass(frozen=True)
 class GuideStep:
-    """Rehberin bir adımı. ``section`` ileride vurgulanacak arayüz bölümünün adıdır."""
+    """Rehberin bir adımı. ``section``, vurgulanan arayüz bileşeninin anahtarıdır
+    (``VacuumApp.guide_targets()``)."""
 
     title: str
     body: str
     section: str = ""
 
 
-# Rehberin içeriği veridir; yeni adımlar bu listeye eklenerek rehber genişletilir.
+# Rehberin içeriği veridir; adımlar bu listeye eklenerek ya da çıkarılarak
+# değiştirilir. Rehber guide.GuideTour ile gerçek simülasyon ekranında gösterilir.
 GUIDE_STEPS = (
-    GuideStep(
-        "Simülasyonu başlatın",
-        "Oyna ile simülasyon ekranına geçin, ayarları seçip Başlat'a basın. Robot ajan bulunduğu "
-        "odayı algılar ve her adımda bir eylem seçer: temizlemek ya da başka bir odaya gitmek.",
-    ),
-    GuideStep(
-        "Adım adım rehber hazırlanıyor",
-        "Ayarlar, Gerçek Ortam, Ajanın İç Modeli, Simülasyon Durumu ve Algı-Eylem Günlüğü "
-        "bölümleri sonraki sürümde bu ekranda tek tek tanıtılacak.",
-    ),
+    GuideStep("Adım aralığı",
+              "Ajanın iki adımı arasındaki süredir (milisaniye). Her adımda ajan bulunduğu odayı algılar "
+              "ve tek bir eylem seçer. 700 ms, saniyede yaklaşık 1,4 adım demektir. Simülasyon çalışırken "
+              "de değiştirilebilir.", "step"),
+    GuideStep("Kirlenme aralığı",
+              "Odaların yeniden kirlenme sıklığıdır (saniye). Her tetiklemede temiz olan her oda %30 "
+              "olasılıkla kirlenir. Bu zamanlayıcı adımlardan bağımsız çalışır.", "dirt"),
+    GuideStep("Seed",
+              "Rastgele sayı üretecinin başlangıç değeridir. Aynı seed ve ayarlarla başlangıç durumu, "
+              "kirlenmeler ve rastgele seçimler aynen tekrarlanır; deneyler karşılaştırılabilir olur. "
+              "Boş bırakılırsa her çalıştırma farklıdır.", "seed"),
+    GuideStep("Satır",
+              "Ortamdaki oda satırı sayısıdır (1–6). Varsayılan 1×2 ortam, ödevin iki odalı A–B "
+              "dünyasıdır. Boyut değişikliği Başlat'a basınca uygulanır.", "rows"),
+    GuideStep("Sütun",
+              "Oda sütunu sayısıdır (1–6); ortamda en az iki oda bulunmalıdır. Büyük ortamlarda odalar "
+              "satır harfi ve sütun numarasıyla adlandırılır (A1, B3 gibi).", "cols"),
+    GuideStep("Ajan türü",
+              "Basit refleks ajan yalnızca o anki algıya bakar; belleği yoktur. Model tabanlı ajan geçmiş "
+              "gözlemlerini iç modelinde saklar; önce hiç görmediği, sonra en uzun süredir görmediği komşu "
+              "odaya gider. Amaç tabanlı ajan bir hedef oda seçer ve oraya BFS ile en kısa rotayı bulur. "
+              "Hiçbiri makine öğrenmesi yapmaz; kuralları sabittir.", "agent"),
+    GuideStep("Başlat",
+              "Seçili ayarlarla yeni bir simülasyon başlatır; önceki durum ve günlük sıfırlanır. "
+              "Simülasyon çalışırken satır, sütun ve ajan türü kilitlenir.", "start"),
+    GuideStep("Duraklat / Devam",
+              "Simülasyonu durumunu koruyarak bekletir; Devam kaldığı yerden sürdürür. Zamanlayıcılar "
+              "kalan sürelerini korur. Kısayol: Boşluk.", "pause"),
+    GuideStep("Durdur",
+              "Simülasyonu sonlandırır; son durum ve günlük ekranda kalır. Başlat yeni bir simülasyon "
+              "açar. Kısayol: Esc.", "stop"),
+    GuideStep("Ajanları Karşılaştır",
+              "Üç ajanı ayrı bir pencerede aynı seed'ler ve aynı başlangıçla ölçer: bütün odaların ilk kez "
+              "görülme süresi, ortalama temiz oda oranı ve temizlik başına hareket. Ana simülasyonu "
+              "etkilemez.", "compare"),
+    GuideStep("Gerçek ortam",
+              "Odaların gerçek durumu: yeşil temiz, lekeli kahverengi kirli. Mavi çerçeve ve robot, ajanın "
+              "bulunduğu odadır. Ajan bu panelin tamamını göremez; yalnızca bulunduğu odayı algılar.",
+              "environment"),
+    GuideStep("Ajanın iç modeli",
+              "Ajanın dünya hakkındaki inancıdır; gerçek durum değildir. Ajan gördüğü odayı kaydeder, ama "
+              "görmediği sürede oda kirlenmiş olabilir. Sarı çizgili \"Eski\" hücreler uzun süre önce "
+              "görülmüş odalardır; yaş, son bilgiden bu yana geçen ajan adımıdır.", "model"),
+    GuideStep("Hedef ve rota",
+              "Amaç tabanlı ajan önce bildiği kirli odayı, sonra hiç görmediği odayı, sonra uzun süredir "
+              "görmediği yakın odayı hedefler. Mor çerçeve hedefi, mor ok BFS ile bulunan en kısa rotayı "
+              "gösterir; gerçek ortamda hedef ◆ ile işaretlenir.", "plan"),
+    GuideStep("Simülasyon durumu",
+              "Durum, ajan türü, ortam boyutu, kirli ve bilinen oda sayıları, hedef, adım, temizleme ve "
+              "hareket sayıları ile geçen süre burada anlık izlenir.", "status"),
+    GuideStep("Algı ve eylem günlüğü",
+              "Her adımda oda, algı (Temiz/Kirli) ve seçilen eylem sırayla yazılır. Turuncu satırlar "
+              "kirlenmeleri, mor satırlar hedef değişimlerini gösterir; bunlar adım sayılmaz. Ekranı "
+              "Temizle yalnızca ekrandaki satırları siler.", "log"),
+    GuideStep("Ana Menü'ye dönüş",
+              "Simülasyonu güvenle durdurup açılış ekranına döner. Rehber burada bitiyor: Oyna ile kendi "
+              "simülasyonunuzu başlatabilirsiniz.", "home"),
 )
 
 
@@ -351,73 +401,3 @@ class GuideNavigator:
 
     def position_text(self):
         return f"{self.index + 1} / {len(self.steps)}"
-
-
-class GuideScreen:
-    """"Nasıl Oynanır?" ekranı: adım kartı, İleri/Geri, Ana Menü ve Oyna."""
-
-    def __init__(self, root, scale=1.0, on_home=None, on_play=None, steps=GUIDE_STEPS):
-        self.root = root
-        self.scale = scale
-        self.navigator = GuideNavigator(steps)
-        px = lambda value: theme.px(value, scale)  # noqa: E731
-
-        self.frame = ttk.Frame(root, style="Page.TFrame", padding=px(24))
-        self.frame.grid(row=0, column=0, sticky="nsew")
-        root.rowconfigure(0, weight=1)
-        root.columnconfigure(0, weight=1)
-        self.frame.columnconfigure(0, weight=1)
-        self.frame.rowconfigure(1, weight=1)
-
-        top = ttk.Frame(self.frame, style="Page.TFrame")
-        top.grid(row=0, column=0, sticky="ew", pady=(0, px(16)))
-        self.home_button = ttk.Button(top, text=theme.button_text("home", HOME_TEXT), command=on_home,
-                                      **theme.button_options("small"))
-        self.home_button.pack(side="left")
-        ttk.Label(top, text=GUIDE_TEXT, style="Title.TLabel").pack(side="left", padx=(px(16), 0))
-
-        outer, body = theme.card(self.frame, 28, scale)
-        outer.grid(row=1, column=0, sticky="new")             # kart içeriği kadar yüksek
-        body.columnconfigure(0, weight=1)
-        self.position = ttk.Label(body, style="CardNote.TLabel")
-        self.position.grid(row=0, column=0, sticky="w")
-        self.step_title = ttk.Label(body, style="GuideTitle.TLabel")
-        self.step_title.grid(row=1, column=0, sticky="w", pady=(px(8), px(10)))
-        self.step_body = ttk.Label(body, style="GuideBody.TLabel", justify="left")
-        self.step_body.grid(row=2, column=0, sticky="new")
-        body.bind("<Configure>", lambda e: self.step_body.configure(wraplength=max(px(200), e.width - px(60))))
-
-        nav = ttk.Frame(body, style="Card.TFrame")
-        nav.grid(row=3, column=0, sticky="ew", pady=(px(20), 0))
-        self.back_button = ttk.Button(nav, text=theme.button_text("back", "Geri"), command=self.back,
-                                      width=-10, **theme.button_options("secondary"))
-        self.next_button = ttk.Button(nav, text=f"İleri  {theme.BUTTON_SYMBOLS['next']}"
-                                      if not theme.text_only() else "İleri",
-                                      command=self.next, width=-10, **theme.button_options("secondary"))
-        self.play_button = ttk.Button(nav, text=theme.button_text("start", PLAY_TEXT), command=on_play,
-                                      width=-10, **theme.button_options("primary"))
-        self.back_button.pack(side="left")
-        self.next_button.pack(side="left", padx=(px(10), 0))
-        self.play_button.pack(side="right")
-        root.bind("<Escape>", lambda _e: on_home() if on_home else None)
-        self._show()
-
-    def _show(self):
-        step = self.navigator.current
-        self.position.configure(text=f"Adım {self.navigator.position_text()}")
-        self.step_title.configure(text=step.title)
-        self.step_body.configure(text=step.body)
-        self.back_button.configure(state="normal" if self.navigator.can_back else "disabled")
-        self.next_button.configure(state="normal" if self.navigator.can_next else "disabled")
-
-    def next(self):
-        self.navigator.next()
-        self._show()
-
-    def back(self):
-        self.navigator.back()
-        self._show()
-
-    def destroy(self):
-        self.root.unbind("<Escape>")
-        self.frame.destroy()

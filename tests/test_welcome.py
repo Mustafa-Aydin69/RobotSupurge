@@ -10,7 +10,7 @@ import theme
 import welcome_assets
 from gui import AppShell, VacuumApp
 from simulation import SimulationState
-from welcome import (FEATURES, GUIDE_STEPS, GuideNavigator, GuideScreen, GuideStep, WELCOME_SUBTITLE,
+from welcome import (FEATURES, GUIDE_STEPS, GuideNavigator, GuideStep, WELCOME_SUBTITLE,
                      WELCOME_TITLE, WelcomeScreen)
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -76,10 +76,10 @@ class GuideNavigatorTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             GuideNavigator(())
 
-    def test_guide_content_is_short_and_real(self):
-        self.assertTrue(1 <= len(GUIDE_STEPS) <= 3)
+    def test_guide_content_is_short(self):
+        self.assertEqual(len(GUIDE_STEPS), 16)
         for step in GUIDE_STEPS:
-            self.assertLess(len(step.body), 300)
+            self.assertLess(len(step.body), 420)
 
 
 class ShellTestCase(unittest.TestCase):
@@ -231,25 +231,27 @@ class HomeTests(ShellTestCase):
         self.assertIs(first.simulation.state, SimulationState.STOPPED)   # eski oturum çalışmıyor
 
 
-class GuideScreenTests(ShellTestCase):
+class GuideEntryTests(ShellTestCase):
+    """Açılış ekranından rehbere giriş ve çıkış (ayrıntılı testler test_guide.py'de)."""
+
     def test_guide_open_navigate_and_return(self):
         self.shell.screen.guide_button.invoke()
         self.assertEqual(self.shell.current, "guide")
-        guide = self.shell.screen
-        self.assertIsInstance(guide, GuideScreen)
-        self.assertEqual(str(guide.back_button["state"]), "disabled")
-        self.assertEqual(guide.step_title["text"], GUIDE_STEPS[0].title)
-        if len(GUIDE_STEPS) > 1:
-            guide.next_button.invoke()
-            self.assertEqual(guide.step_title["text"], GUIDE_STEPS[1].title)
-            self.assertEqual(str(guide.back_button["state"]), "normal")
-        guide.home_button.invoke()
+        tour = self.shell.tour
+        self.assertEqual(str(tour.back_button["state"]), "disabled")
+        self.assertEqual(tour.title_label["text"], GUIDE_STEPS[0].title)
+        tour.next_button.invoke()
+        self.assertEqual(tour.title_label["text"], GUIDE_STEPS[1].title)
+        self.assertEqual(str(tour.back_button["state"]), "normal")
+        tour.home_button.invoke()
         self.assertEqual(self.shell.current, "welcome")
         self.assertNotIn("<Key-Escape>", self.root.bind())
 
     def test_play_from_guide(self):
         self.shell.show_guide()
-        self.shell.screen.play_button.invoke()
+        tour = self.shell.tour
+        tour.show_step(len(GUIDE_STEPS) - 1)
+        tour.play_button.invoke()
         self.assertEqual(self.shell.current, "simulation")
 
 

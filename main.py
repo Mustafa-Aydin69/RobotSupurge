@@ -24,6 +24,7 @@
 #   self_test.py       --self-test doğrulaması
 #   welcome.py         açılış ekranı ve "Nasıl Oynanır?" rehberi
 #   welcome_assets.py  açılış ekranı görselleri (PNG, kaynak koda gömülü)
+#   guide.py           etkileşimli "Nasıl Oynanır?" rehberi (gerçek ekran üzerinde)
 """Uygulamanın giriş noktası."""
 
 import sys
