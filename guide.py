@@ -27,9 +27,11 @@ from welcome import HOME_TEXT, PLAY_TEXT, GuideNavigator
 DIM_ALPHA = 0.55                # karartma katmanının saydamlığı (0 = görünmez, 1 = opak)
 DIM_COLOR = "#0b1a33"           # lacivert karartma rengi
 HOLE_KEY = "#ff00fe"            # katmanda tamamen saydam bırakılan renk (vurgu deliği)
-HOLE_PAD = 8                    # deliğin hedefin çevresindeki payı
+HOLE_PAD = 9                    # deliğin hedefin çevresindeki payı (iki çerçeve bu payın içinde)
 RING_WIDTH = 3                  # vurgu çerçevesinin kalınlığı
 RING_COLOR = "#2f80ff"
+GLOW_WIDTH = 3                  # dış çerçevenin içindeki açık mavi ikinci çerçeve
+GLOW_COLOR = "#a8c9ff"          # soluk (devre dışı) bileşenlerde de vurgu belirgin kalır
 CARD_GAP = 14                   # açıklama kutusu ile hedef arasındaki boşluk
 WINDOW_MARGIN = 12              # açıklama kutusunun pencere kenarına en yakın uzaklığı
 CARD_WIDTHS = (400, 340, 280)   # sırayla denenen kutu genişlikleri (%100 ölçekte)
@@ -125,6 +127,8 @@ class GuideTour:
 
         self.overlay = self._create_overlay() if dim else None
         self.ring = [tk.Frame(self.root, background=RING_COLOR, borderwidth=0, highlightthickness=0,
+                              **theme.tk_options()) for _ in range(4)]
+        self.glow = [tk.Frame(self.root, background=GLOW_COLOR, borderwidth=0, highlightthickness=0,
                               **theme.tk_options()) for _ in range(4)]
         self._build_card()
 
@@ -329,9 +333,20 @@ class GuideTour:
         self.card.lift()
 
     def _place_ring(self, hole):
+        """Deliğin kenarında mavi çerçeve, hemen içinde açık mavi ikinci çerçeve.
+
+        İkisi de deliğin (hedefin çevresindeki payın) içindedir; karartılmaz ve
+        hedefin üstüne binmez.
+        """
         x0, y0, x1, y1 = hole
-        w = self._px(RING_WIDTH)
-        for frame, (x, y, width, height) in zip(self.ring, (
+        ring = self._px(RING_WIDTH)
+        self._place_frame_ring(self.ring, (x0, y0, x1, y1), ring)
+        self._place_frame_ring(self.glow, (x0 + ring, y0 + ring, x1 - ring, y1 - ring), self._px(GLOW_WIDTH))
+
+    @staticmethod
+    def _place_frame_ring(frames, rect, w):
+        x0, y0, x1, y1 = rect
+        for frame, (x, y, width, height) in zip(frames, (
                 (x0, y0, x1 - x0, w), (x0, y1 - w, x1 - x0, w), (x0, y0, w, y1 - y0), (x1 - w, y0, w, y1 - y0))):
             frame.place(x=x, y=y, width=max(1, width), height=max(1, height))
             frame.lift()
@@ -379,7 +394,7 @@ class GuideTour:
             self._job = None
         for sequence, script in self._saved_bindings.items():
             self.root.bind(sequence, script)
-        for frame in self.ring:
+        for frame in self.ring + self.glow:
             frame.destroy()
         for window in (self.card, self.overlay):
             if window is not None:

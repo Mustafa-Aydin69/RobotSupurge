@@ -249,9 +249,15 @@ class GuideTourTests(AppTestCase):
                 self.assertTrue(hole[2] >= min(target[2], self.root.winfo_width()))
                 self.assertNotEqual(tour.card_side, "overlap")
                 self.assertFalse(intersects(tour.card_rect(), hole))
-                # Vurgu çerçevesi deliğin kenarında.
+                # Vurgu çerçevesi deliğin kenarında, ikinci çerçeve hemen içinde; ikisi de hedefin dışında.
                 top = tour.ring[0]
                 self.assertEqual((top.winfo_x(), top.winfo_y()), (hole[0], hole[1]))
+                glow = tour.glow[0]
+                self.assertEqual((glow.winfo_x(), glow.winfo_y()), (hole[0] + top.winfo_height(),
+                                                                    hole[1] + top.winfo_height()))
+                glow_inner = (glow.winfo_x() + glow.winfo_height(), glow.winfo_y() + glow.winfo_height())
+                self.assertLessEqual(glow_inner[0], max(target[0], 0))
+                self.assertLessEqual(glow_inner[1], max(target[1], 0))
 
     def test_dim_overlay_matches_window_and_has_a_hole(self):
         tour = self.start()
@@ -326,7 +332,7 @@ class GuideTourTests(AppTestCase):
         self.tour = None
         self.assertFalse(self.app.interaction_locked)
         self.assertEqual([w for w in self.root.winfo_children() if isinstance(w, tk.Toplevel)], [])
-        self.assertTrue(all(not frame.winfo_exists() for frame in tour.ring))
+        self.assertTrue(all(not frame.winfo_exists() for frame in tour.ring + tour.glow))
         self.assertLess(len(self.root.winfo_children()), len(before_children))
         self.assertEqual(self.pending_after_jobs(), ())
         bindings = self.root.bind()
